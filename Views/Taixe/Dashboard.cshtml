@@ -1,0 +1,102 @@
+@model List<WedNightFury.Models.Order>
+
+<h2 class="fw-bold mb-4 text-danger">🚚 ĐƠN HÀNG CỦA BẠN</h2>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-info">@TempData["Message"]</div>
+}
+
+<table class="table table-striped table-bordered align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th style="width:150px;">Mã đơn</th>
+            <th>Người nhận</th>
+            <th>Địa chỉ</th>
+            <th style="width:160px;">Giá trị</th>
+            <th style="width:120px;">Trạng thái</th>
+            <th style="width:200px;">Thao tác</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var o in Model)
+        {
+            <tr>
+                <td>
+                    <a asp-controller="Taixe"
+                       asp-action="StopDetail"
+                       asp-route-id="@o.Id"
+                       class="fw-semibold text-decoration-none">
+                        @o.Code
+                    </a>
+                </td>
+
+                <td>@o.ReceiverName</td>
+                <td>@o.ReceiverAddress</td>
+
+                <td class="fw-bold text-end">
+                    @o.Value.ToString("N0") đ
+                </td>
+
+                <td>
+                    @if (o.Status == "pending")
+                    {
+                        <span class="badge bg-warning text-dark px-3 py-2">Chờ xử lý</span>
+                    }
+                    else if (o.Status == "shipping")
+                    {
+                        <span class="badge bg-primary px-3 py-2">Đang giao</span>
+                    }
+                    else if (o.Status == "done")
+                    {
+                        <span class="badge bg-success px-3 py-2">Hoàn tất</span>
+                    }
+                    else if (o.Status == "failed")
+                    {
+                        <span class="badge bg-danger px-3 py-2">Thất bại</span>
+                    }
+                </td>
+
+                <td>
+                    <div class="d-flex gap-2">
+
+                        <!-- Nút Xem -->
+                        <a asp-controller="Taixe"
+                           asp-action="StopDetail"
+                           asp-route-id="@o.Id"
+                           class="btn btn-dark btn-sm">
+                            Xem
+                        </a>
+
+                        <!-- Nút Bắt đầu giao (pending → shipping) -->
+                        @if (o.Status == "pending")
+                        {
+                            <form asp-controller="Taixe"
+                                  asp-action="UpdateStatus"
+                                  method="post">
+                                <input type="hidden" name="id" value="@o.Id" />
+                                <button name="status"
+                                        value="shipping"
+                                        class="btn btn-primary btn-sm">
+                                    Bắt đầu giao
+                                </button>
+                            </form>
+                        }
+                        else if (o.Status == "shipping")
+                        {
+                            <span class="badge bg-info text-dark px-3 py-2">Đang giao…</span>
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<style>
+    .table td, .table th {
+        vertical-align: middle !important;
+    }
+</style>
+    

@@ -1,0 +1,39 @@
+@model List<WedNightFury.Models.Order>
+@{
+    ViewData["Title"] = "Lộ trình hôm nay";
+}
+
+<h2 class="fw-bold mb-4">🗺 LỘ TRÌNH GIAO HÀNG HÔM NAY</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-warning">Hôm nay bạn chưa có chuyến nào.</div>
+}
+else
+{
+    <ol class="list-group list-group-numbered">
+        @foreach (var order in Model)
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                    <div class="fw-bold">@order.ReceiverName (@order.Code)</div>
+                    <div><i class="fa fa-location-dot"></i> @order.ReceiverAddress</div>
+                    <div><i class="fa fa-phone"></i> @order.ReceiverPhone</div>
+                </div>
+                <div class="d-flex flex-column" style="gap:6px;">
+                    @if (order.Lat != null && order.Lng != null)
+                    {
+                        <a class="btn btn-outline-primary btn-sm"
+                           href="https://www.google.com/maps/dir/?api=1&destination=@order.Lat,@order.Lng"
+                           target="_blank">
+                            Điều hướng
+                        </a>
+                    }
+                    <a asp-action="StopDetail" asp-route-id="@order.Id" class="btn btn-dark btn-sm">
+                        Chi tiết
+                    </a>
+                </div>
+            </li>
+        }
+    </ol>
+}

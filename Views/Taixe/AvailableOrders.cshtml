@@ -1,0 +1,33 @@
+@model List<WedNightFury.Models.Order>
+
+<h2 class="fw-bold mb-4 text-danger">📦 ĐƠN HÀNG CHƯA NHẬN</h2>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Mã đơn</th>
+            <th>Người nhận</th>
+            <th>Địa chỉ</th>
+            <th>Giá trị</th>
+            <th>Thao tác</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var o in Model)
+        {
+            <tr>
+                <td>@o.Code</td>
+                <td>@o.ReceiverName</td>
+                <td>@o.ReceiverAddress</td>
+                <td>@o.Value.ToString("N0") đ</td>
+                <td>
+                    <form asp-action="AcceptOrder" method="post">
+                        <input type="hidden" name="id" value="@o.Id" />
+                        <button class="btn btn-success btn-sm">Nhận đơn</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
