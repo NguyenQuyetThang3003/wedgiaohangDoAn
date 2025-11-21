@@ -1,37 +1,29 @@
 @model WedNightFury.Models.ViewModels.DeliveredViewModel
-@{
-    ViewData["Title"] = "Xác nhận giao hàng";
-}
 
-<h2 class="fw-bold mb-3">✅ XÁC NHẬN GIAO HÀNG</h2>
+<h2 class="fw-bold mb-4 text-success">
+    ✔ Xác nhận giao thành công
+</h2>
 
-<div class="card">
-    <div class="card-body">
-        <h5 class="card-title">@Model.Code - @Model.ReceiverName</h5>
-        <p class="card-text">
-            <i class="fa fa-location-dot"></i> @Model.ReceiverAddress
-        </p>
+<form asp-action="Delivered" method="post" enctype="multipart/form-data">
 
-        <form asp-action="Delivered" method="post" enctype="multipart/form-data">
-            <input type="hidden" asp-for="OrderId"/>
+    <input type="hidden" asp-for="OrderId" />
 
-            <div class="mb-3">
-                <label asp-for="PodImage" class="form-label">Ảnh POD (bắt buộc)</label>
-                <input asp-for="PodImage" class="form-control" type="file" accept="image/*" />
-                <span asp-validation-for="PodImage" class="text-danger"></span>
-            </div>
+    <p><strong>Mã đơn:</strong> @Model.Code</p>
+    <p><strong>Người nhận:</strong> @Model.ReceiverName</p>
+    <p><strong>Địa chỉ:</strong> @Model.ReceiverAddress</p>
 
-            <div class="mb-3">
-                <label asp-for="Note" class="form-label">Ghi chú (không bắt buộc)</label>
-                <textarea asp-for="Note" class="form-control"></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-success">Xác nhận giao thành công</button>
-            <a asp-action="StopDetail" asp-route-id="@Model.OrderId" class="btn btn-secondary ms-2">Quay lại</a>
-        </form>
+    <div class="mb-3">
+        <label class="fw-bold">Ảnh POD (bắt buộc)</label>
+        <input asp-for="PodImage" type="file" accept="image/*" class="form-control" required />
+        <span asp-validation-for="PodImage" class="text-danger"></span>
     </div>
-</div>
 
-@section Scripts{
-    <partial name="_ValidationScriptsPartial" />
-}
+    <div class="mb-3">
+        <label class="fw-bold">Ghi chú</label>
+        <textarea asp-for="Note" class="form-control"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success btn-lg">
+        ✔ Xác nhận giao hàng
+    </button>
+</form>

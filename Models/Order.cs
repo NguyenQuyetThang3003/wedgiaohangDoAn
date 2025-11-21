@@ -10,32 +10,48 @@ namespace WedNightFury.Models
         [Key]
         public int Id { get; set; }
 
-        // Khách hàng
+        // ============================
+        // 👤 KHÁCH HÀNG
+        // ============================
         [ForeignKey("User")]
         public int? CustomerId { get; set; }
         public virtual User? User { get; set; }
 
-        // Mã đơn
+        // ============================
+        // 🔖 MÃ ĐƠN
+        // ============================
         [StringLength(50)]
         public string? Code { get; set; }
 
-        // Người gửi
+        // ============================
+        // 📦 NGƯỜI GỬI
+        // ============================
         [StringLength(100)]
         public string? SenderName { get; set; }
+
         [StringLength(20)]
         public string? SenderPhone { get; set; }
+
         [StringLength(200)]
         public string? SenderAddress { get; set; }
 
-        // Người nhận
+        // ============================
+        // 🎁 NGƯỜI NHẬN
+        // ============================
         [StringLength(100)]
         public string? ReceiverName { get; set; }
+
         [StringLength(20)]
         public string? ReceiverPhone { get; set; }
+
         [StringLength(200)]
         public string? ReceiverAddress { get; set; }
 
-        // Hàng hóa
+        public string? Province { get; set; }
+
+        // ============================
+        // 📦 HÀNG HÓA
+        // ============================
         [StringLength(200)]
         public string? ProductName { get; set; }
 
@@ -48,35 +64,55 @@ namespace WedNightFury.Models
         [StringLength(200)]
         public string? Note { get; set; }
 
-        // Quản lý đơn
+        // ============================
+        // 📌 TRẠNG THÁI
+        // ============================
         [StringLength(20)]
-        public string? Status { get; set; } = "pending";  // pending | assigned | shipping | done | failed
+        public string? Status { get; set; } = "pending";
 
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
-
-        public string? Province { get; set; }
 
         // ============================
         // 🚚 TÀI XẾ
         // ============================
+        public int? DriverId { get; set; }
+        public DateTime? AssignedAt { get; set; }
+        public DateTime? DeliveryDate { get; set; }
+        public int? Sequence { get; set; }
 
-        public int? DriverId { get; set; }           // tài xế nhận đơn
-        public DateTime? AssignedAt { get; set; }    // thời điểm tài xế nhận đơn
-
-        public DateTime? DeliveryDate { get; set; }  // ngày giao
-        public int? Sequence { get; set; }           // thứ tự ghé
-
+        // ============================
+        // MAP – VỊ TRÍ NHẬN HÀNG
+        // ============================
         public double? Lat { get; set; }
         public double? Lng { get; set; }
 
-        // POD (giao thành công)
+        // ============================
+        // 📷 POD – GIAO THÀNH CÔNG
+        // ============================
         public string? PodImagePath { get; set; }
         public string? DeliveredNote { get; set; }
         public DateTime? DeliveredAt { get; set; }
 
-        // Failed (giao thất bại)
+        // ============================
+        // ❌ GIAO THẤT BẠI
+        // ============================
         public string? FailedReason { get; set; }
         public string? FailedImagePath { get; set; }
         public DateTime? FailedAt { get; set; }
+
+        // ============================
+        // 🚛 PHÍ VẬN CHUYỂN
+        // ============================
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal ShipFee { get; set; } = 0;
+
+        // ============================
+        // 💰 COD – TIỀN THU HỘ
+        // ============================
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal CodAmount { get; set; } = 0;
+
+        public bool IsCodPaid { get; set; } = false;
+        public DateTime? CodPaidAt { get; set; }
     }
 }

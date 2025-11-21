@@ -1239,3 +1239,4 @@ D:\Đồ Án Chuyên Ngành 2025\WedNightFury\obj\Debug\net9.0\refint\WedNightFu
 D:\Đồ Án Chuyên Ngành 2025\WedNightFury\obj\Debug\net9.0\WedNightFury.pdb
 D:\Đồ Án Chuyên Ngành 2025\WedNightFury\obj\Debug\net9.0\WedNightFury.genruntimeconfig.cache
 D:\Đồ Án Chuyên Ngành 2025\WedNightFury\obj\Debug\net9.0\ref\WedNightFury.dll
+D:\Đồ Án Chuyên Ngành 2025\WedNightFury\obj\Debug\net9.0\WedNightFury.sourcelink.json

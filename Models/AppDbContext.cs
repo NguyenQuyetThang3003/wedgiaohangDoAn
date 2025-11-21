@@ -13,5 +13,7 @@ namespace WedNightFury.Models
         public DbSet<Profile> Profiles { get; set; }
         public DbSet<Faq> Faqs { get; set; }
         public DbSet<Receiver> Receivers { get; set; }
+        public DbSet<SupportTicket> SupportTickets { get; set; }
+
     }
 }

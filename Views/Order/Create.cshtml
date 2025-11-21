@@ -7,233 +7,236 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<style>
-    body {
-        background-color: #f5f7fa;
-    }
-
-    .card-section {
-        background: #fff;
-        border-radius: 10px;
-        padding: 25px;
-        margin-bottom: 25px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .card-section h5 {
-        color: #d32f2f;
-        font-weight: 700;
-        border-bottom: 2px solid #f1f1f1;
-        padding-bottom: 8px;
-        margin-bottom: 20px;
-    }
-
-    label {
-        font-weight: 600;
-        font-size: 0.9rem;
-    }
-
-    .btn-danger {
-        background-color: #d32f2f;
-        border-color: #d32f2f;
-    }
-
-    .btn-danger:hover {
-        background-color: #b71c1c;
-    }
-</style>
-
 <div class="container py-5">
     <h2 class="text-center text-danger fw-bold mb-4">
         <i class="bi bi-truck"></i> TẠO ĐƠN HÀNG NIGHTFURY
     </h2>
 
     <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
         <!-- NGƯỜI GỬI -->
-        <div class="card-section">
-            <h5><i class="bi bi-person-fill"></i> NGƯỜI GỬI</h5>
+        <div class="card p-3 mb-4">
+            <h5>NGƯỜI GỬI</h5>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label asp-for="SenderName">Tên người gửi</label>
-                    <input asp-for="SenderName" class="form-control" placeholder="VD: Nguyễn Văn A" />
+                    <label>Tên người gửi</label>
+                    <input asp-for="SenderName" class="form-control" />
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="SenderPhone">Số điện thoại</label>
-                    <input asp-for="SenderPhone" class="form-control" placeholder="VD: 0909123456" />
+                    <label>Số điện thoại</label>
+                    <input asp-for="SenderPhone" class="form-control" />
                 </div>
                 <div class="col-md-12">
-                    <label asp-for="SenderAddress">Địa chỉ gửi hàng</label>
-                    <input asp-for="SenderAddress" class="form-control" placeholder="Số nhà, đường, phường, quận..." />
-                </div>
-                <div class="col-md-4">
-                    <label>Thời gian hẹn lấy</label>
-                    <input type="datetime-local" class="form-control" />
+                    <label>Địa chỉ gửi</label>
+                    <input asp-for="SenderAddress" class="form-control" />
                 </div>
             </div>
         </div>
 
         <!-- NGƯỜI NHẬN -->
-        <div class="card-section">
-            <h5><i class="bi bi-person-lines-fill"></i> NGƯỜI NHẬN</h5>
+        <div class="card p-3 mb-4">
+            <h5>NGƯỜI NHẬN</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label>Tên người nhận</label>
+                    <input asp-for="ReceiverName" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label>SĐT người nhận</label>
+                    <input asp-for="ReceiverPhone" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label>Tỉnh/Thành phố</label>
+                    <select id="province" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                    <label>Quận/Huyện</label>
+                    <select id="district" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                    <label>Phường/Xã</label>
+                    <select id="ward" class="form-select"></select>
+                </div>
+
+                <div class="col-md-12">
+                    <label>Địa chỉ chi tiết</label>
+                    <input asp-for="ReceiverAddress" id="DetailAddress" class="form-control" />
+                </div>
+            </div>
+        </div>
+
+        <!-- HÀNG HÓA -->
+        <div class="card p-3 mb-4">
+            <h5>HÀNG HÓA</h5>
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label asp-for="ReceiverName">Tên người nhận</label>
-                    <input asp-for="ReceiverName" class="form-control" placeholder="VD: Trần Thị B" />
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="ReceiverPhone">Số điện thoại</label>
-                    <input asp-for="ReceiverPhone" class="form-control" placeholder="VD: 0987654321" />
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="Province">Tỉnh/Thành phố</label>
-                    <input asp-for="Province" class="form-control" placeholder="VD: TP. Hồ Chí Minh" />
-                </div>
-                <div class="col-md-12">
-                    <label asp-for="ReceiverAddress">Địa chỉ chi tiết</label>
-                    <input asp-for="ReceiverAddress" class="form-control" placeholder="Số nhà, đường, phường, quận..." />
+                    <label>Tên hàng</label>
+                    <input asp-for="ProductName" class="form-control" />
                 </div>
 
-                <div class="col-md-12 mt-2">
-                    <label class="fw-bold">Tùy chọn nơi nhận</label>
-                    <div class="form-check form-check-inline ms-3">
-                        <input class="form-check-input" type="radio" name="receiveType" checked>
-                        <label class="form-check-label">Theo địa chỉ KH nhận</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="receiveType">
-                        <label class="form-check-label">Nhận tại bưu cục</label>
-                    </div>
+                <div class="col-md-4">
+                    <label>Trọng lượng (gram)</label>
+                    <input asp-for="Weight" id="Weight" type="number" class="form-control" oninput="calculateShipping()" />
+                </div>
+
+                <div class="col-md-4">
+                    <label>Giá trị (VNĐ)</label>
+                    <input asp-for="Value" id="Value" class="form-control" oninput="formatCurrency(this)" />
+                </div>
+
+                <div class="col-md-4">
+                    <label>Kích thước (Dài)</label>
+                    <input id="length" type="number" class="form-control" oninput="calculateShipping()" />
+                </div>
+                <div class="col-md-4">
+                    <label>Rộng</label>
+                    <input id="width" type="number" class="form-control" oninput="calculateShipping()" />
+                </div>
+                <div class="col-md-4">
+                    <label>Cao</label>
+                    <input id="height" type="number" class="form-control" oninput="calculateShipping()" />
                 </div>
             </div>
         </div>
 
-        <!-- THÔNG TIN HÀNG HÓA -->
-        <div class="card-section">
-            <h5><i class="bi bi-box-seam"></i> THÔNG TIN HÀNG HÓA</h5>
+        <!-- THANH TOÁN -->
+        <div class="card p-3 mb-4">
+            <h5>THANH TOÁN</h5>
+
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label asp-for="ProductName">Tên hàng hóa</label>
-                    <input asp-for="ProductName" class="form-control" placeholder="VD: Giày, áo, sách..." />
+                    <label>Phí vận chuyển</label>
+                    <input id="shipping-fee" class="form-control fw-bold text-danger" disabled />
                 </div>
-                <div class="col-md-2">
-                    <label asp-for="Weight">Trọng lượng (gram)</label>
-                    <input asp-for="Weight" type="number" class="form-control" />
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="Value">Giá trị (VNĐ)</label>
-                    <input asp-for="Value" type="number" class="form-control" />
-                </div>
-                <div class="col-md-3">
-                    <label>Số lượng</label>
-                    <input type="number" class="form-control" value="1" />
-                </div>
-            </div>
 
-            <div class="row g-3 mt-3">
-                <div class="col-md-12">
-                    <label>Tính chất hàng hóa đặc biệt:</label><br />
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" />
-                        <label class="form-check-label">Giá trị cao</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" />
-                        <label class="form-check-label">Dễ vỡ</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" />
-                        <label class="form-check-label">Chất lỏng</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" />
-                        <label class="form-check-label">Từ tính / Pin</label>
+                <div class="col-md-4">
+                    <label>COD</label>
+                    <input id="codInput" type="text" class="form-control"
+                           oninput="formatCurrency(this); document.getElementById('CodAmountHidden').value=this.value.replace(/\\D/g,'');" />
+
+                    <div class="form-check mt-2">
+                        <input id="codByValue" class="form-check-input" type="checkbox" onclick="useOrderValue()">
+                        <label class="form-check-label">Thu bằng giá trị hàng</label>
                     </div>
                 </div>
+
                 <div class="col-md-4">
-                    <label>Kích thước (Dài cm)</label>
-                    <input type="number" class="form-control" />
-                </div>
-                <div class="col-md-4">
-                    <label>Rộng (cm)</label>
-                    <input type="number" class="form-control" />
-                </div>
-                <div class="col-md-4">
-                    <label>Cao (cm)</label>
-                    <input type="number" class="form-control" />
+                    <label>Ghi chú</label>
+                    <textarea asp-for="Note" class="form-control"></textarea>
                 </div>
             </div>
         </div>
 
-        <!-- THANH TOÁN & GHI CHÚ -->
-        <div class="card-section">
-            <h5><i class="bi bi-cash-coin"></i> THANH TOÁN & GHI CHÚ</h5>
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label>Tiền thu hộ (COD)</label>
-                    <input type="number" class="form-control" placeholder="VD: 150000" />
-                </div>
-                <div class="col-md-4">
-                    <label>Người trả cước</label><br />
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="payer" checked>
-                        <label class="form-check-label">Người gửi</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="payer">
-                        <label class="form-check-label">Người nhận</label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label>Khuyến mãi</label>
-                    <select class="form-select">
-                        <option selected>Chọn mã khuyến mãi</option>
-                        <option>FREESHIP50</option>
-                        <option>SALE10</option>
-                    </select>
-                </div>
-                <div class="col-md-12">
-                    <label asp-for="Note">Ghi chú</label>
-                    <textarea asp-for="Note" class="form-control" rows="3" placeholder="Giao giờ hành chính, gọi trước khi giao..."></textarea>
-                </div>
-            </div>
+        <!-- Hidden -->
+        <input type="hidden" id="ShipFeeHidden" name="ShipFee" />
+        <input type="hidden" id="CodAmountHidden" name="CodAmount" />
+
+        <input type="hidden" id="ProvinceHidden" name="Province" />
+        <input type="hidden" id="DistrictHidden" name="District" />
+        <input type="hidden" id="WardHidden" name="Ward" />
+
+        <!-- SUBMIT -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-danger btn-lg px-5">GỬI NGAY</button>
         </div>
 
-        <!-- NÚT GỬI -->
-        <div class="text-center mt-4">
-            <button type="submit" class="btn btn-danger btn-lg px-5 me-3">
-                <i class="bi bi-send"></i> GỬI NGAY
-            </button>
-            <button type="reset" class="btn btn-secondary btn-lg px-5 me-3">LÀM MỚI</button>
-            <button type="button" class="btn btn-outline-danger btn-lg px-5">LƯU NHÁP</button>
-        </div>
     </form>
 </div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-
-    @* Popup SweetAlert sau khi tạo đơn thành công *@
-    @if (TempData["OrderCode"] != null)
-    {
-        <script>
-            Swal.fire({
-                icon: 'success',
-                title: 'Tạo đơn thành công',
-                html: `Tạo và gửi duyệt thành công đơn hàng: 
-                       <b>@TempData["OrderCode"]</b><br/><br/>
-                       <div>
-                           <label>Số liên cần in:</label><br/>
-                           <input type="radio" checked> 1 liên
-                           <input type="radio"> 2 liên
-                       </div>
-                       <div class='mt-3'>
-                           <button class='btn btn-danger me-2'>In A5</button>
-                           <button class='btn btn-outline-danger me-2'>In nhiệt A6</button>
-                           <button class='btn btn-outline-secondary'>In A7</button>
-                       </div>`,
-                confirmButtonText: 'Đóng',
-                confirmButtonColor: '#d32f2f'
-            })
-        </script>
+<script>
+    // format tiền
+    function formatCurrency(input) {
+        let value = input.value.replace(/\\D/g, "");
+        input.value = value ? new Intl.NumberFormat('vi-VN').format(value) : "";
     }
-}
+
+    function useOrderValue() {
+        let v = document.getElementById("Value").value.replace(/\\D/g, '');
+        document.getElementById("codInput").value = new Intl.NumberFormat("vi-VN").format(v);
+        document.getElementById("CodAmountHidden").value = v;
+    }
+
+    // Tải tỉnh/huyện/xã
+    let provinces = [];
+    fetch("https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json")
+        .then(res => res.json())
+        .then(data => { provinces = data; loadProvinces(); });
+
+    function loadProvinces() {
+        let p = document.getElementById("province");
+        p.innerHTML = `<option value="">--Chọn--</option>`;
+        provinces.forEach(x => p.innerHTML += `<option value="${x.Id}">${x.Name}</option>`);
+
+        p.onchange = () => {
+            document.getElementById("ProvinceHidden").value =
+                p.options[p.selectedIndex].text.trim();
+            loadDistricts();
+        };
+    }
+
+    function loadDistricts() {
+        let did = document.getElementById("district");
+        let pid = document.getElementById("province").value;
+
+        did.innerHTML = `<option value="">--Chọn--</option>`;
+        document.getElementById("DistrictHidden").value = "";
+
+        if (!pid) return;
+
+        provinces.find(x => x.Id == pid).Districts.forEach(d =>
+            did.innerHTML += `<option value="${d.Id}">${d.Name}</option>`
+        );
+
+        did.onchange = () => {
+            document.getElementById("DistrictHidden").value =
+                did.options[did.selectedIndex].text.trim();
+            loadWards();
+        };
+    }
+
+    function loadWards() {
+        let wid = document.getElementById("ward");
+        let did = document.getElementById("district").value;
+        let pid = document.getElementById("province").value;
+
+        wid.innerHTML = `<option value="">--Chọn--</option>`;
+        document.getElementById("WardHidden").value = "";
+
+        if (!pid || !did) return;
+
+        let district = provinces.find(x => x.Id == pid).Districts.find(d => d.Id == did);
+
+        district.Wards.forEach(w =>
+            wid.innerHTML += `<option value="${w.Id}">${w.Name}</option>`
+        );
+
+        wid.onchange = () => {
+            document.getElementById("WardHidden").value =
+                wid.options[wid.selectedIndex].text.trim();
+        };
+    }
+
+    // Ship fee
+    function calculateShipping() {
+        let w = +document.getElementById("Weight").value || 0;
+        let d = +document.getElementById("length").value || 0;
+        let r = +document.getElementById("width").value || 0;
+        let c = +document.getElementById("height").value || 0;
+
+        if (!w && !d && !r && !c) return;
+
+        let vol = (d * r * c) / 6000 * 1000;
+        let cw = Math.max(w, vol);
+
+        let base = cw <= 500 ? 25000 :
+                   cw <= 1000 ? 35000 :
+                   35000 + Math.ceil((cw - 1000) / 500) * 5000;
+
+        document.getElementById("shipping-fee").value =
+            new Intl.NumberFormat("vi-VN").format(base) + " đ";
+
+        document.getElementById("ShipFeeHidden").value = base;
+    }
+</script>

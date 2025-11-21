@@ -6,11 +6,13 @@ namespace WedNightFury.Models.ViewModels
     {
         public int OrderId { get; set; }
 
-        public string Code { get; set; } = string.Empty;
-        public string ReceiverName { get; set; } = string.Empty;
-        public string ReceiverAddress { get; set; } = string.Empty;
+        public string? Code { get; set; }
 
-        public IFormFile PodImage { get; set; } = default!;
+        public string? ReceiverName { get; set; }
+
+        public string? ReceiverAddress { get; set; }
+
+        public IFormFile? PodImage { get; set; }
 
         public string? Note { get; set; }
     }

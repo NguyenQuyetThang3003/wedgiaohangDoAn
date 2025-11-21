@@ -19,26 +19,48 @@ namespace WedNightFury.Controllers
             _env = env;
         }
 
-        // ========== Lấy userId tài xế ==========
         private int? GetCurrentDriverId()
         {
             return HttpContext.Session.GetInt32("UserId");
         }
 
-        // ========== Kiểm tra tài xế ==========
         private bool IsDriver()
         {
             var role = HttpContext.Session.GetString("Role");
             if (role == null) return false;
 
             role = role.ToLower().Trim();
-
             return role == "driver" || role == "taixe";
         }
 
-        // =======================================================
-        // 📌 1. TRANG XEM CÁC ĐƠN CHƯA NHẬN (Tài xế tự nhận như Grab)
-        // =======================================================
+        // ==========================================================
+        // 📌 DASHBOARD – ĐƠN HÔM NAY
+        // ==========================================================
+        public async Task<IActionResult> Dashboard()
+        {
+            if (!IsDriver()) return Forbid();
+
+            var driverId = GetCurrentDriverId();
+            if (driverId == null) return RedirectToAction("Login", "Auth");
+
+            var today = DateTime.Today;
+
+            var orders = await _context.Orders
+                .Where(o => o.DriverId == driverId && o.DeliveryDate == today)
+                .OrderBy(o =>
+                    o.Status == "pending" ? 1 :
+                    o.Status == "shipping" ? 2 :
+                    o.Status == "done" ? 3 :
+                    o.Status == "failed" ? 4 : 5
+                )
+                .ToListAsync();
+
+            return View(orders);
+        }
+
+        // ==========================================================
+        // 📌 ĐƠN HÀNG CHƯA NHẬN
+        // ==========================================================
         public async Task<IActionResult> AvailableOrders()
         {
             if (!IsDriver()) return Forbid();
@@ -51,90 +73,52 @@ namespace WedNightFury.Controllers
             return View(orders);
         }
 
-        // 📌 Nhận đơn
+        // 📌 TÀI XẾ NHẬN ĐƠN
         [HttpPost]
         public async Task<IActionResult> AcceptOrder(int id)
         {
             if (!IsDriver()) return Forbid();
 
             var driverId = GetCurrentDriverId();
-            if (driverId == null) return RedirectToAction("Login", "Auth");
+            if (driverId == null) return Unauthorized();
 
-            var order = await _context.Orders.FindAsync(id);
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
             if (order == null) return NotFound();
 
-            if (order.DriverId != null)
-            {
-                TempData["Message"] = "❌ Đơn đã có tài xế khác nhận!";
-                return RedirectToAction(nameof(AvailableOrders));
-            }
-
             order.DriverId = driverId;
+            order.AssignedAt = DateTime.Now;
             order.DeliveryDate = DateTime.Today;
-            order.Sequence = 1;
-            order.Status = "pending";
 
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = "✔ Nhận đơn thành công!";
-            return RedirectToAction(nameof(Dashboard));
+            TempData["Message"] = "✔ Bạn đã nhận đơn!";
+            return RedirectToAction(nameof(AvailableOrders));
         }
 
-        // =======================================================
-        // 📌 2. DASHBOARD – ĐƠN CỦA TÀI XẾ HÔM NAY
-        // =======================================================
-        public async Task<IActionResult> Dashboard()
-        {
-            if (!IsDriver()) return Forbid();
-
-            var driverId = GetCurrentDriverId();
-            if (driverId == null) return RedirectToAction("Login", "Auth");
-
-            var today = DateTime.Today;
-
-            // Sắp xếp theo trạng thái như yêu cầu:
-            // pending → shipping → done → failed
-            var orders = await _context.Orders
-                .Where(o => o.DriverId == driverId && o.DeliveryDate == today)
-                .OrderBy(o =>
-                    o.Status == "pending" ? 1 :
-                    o.Status == "shipping" ? 2 :
-                    o.Status == "done" ? 3 :
-                    o.Status == "failed" ? 4 : 5
-                )
-                .ThenByDescending(o => o.CreatedAt) // Đơn mới nhất trong nhóm
-                .ToListAsync();
-
-            return View(orders);
-        }
-
-        // =======================================================
-        // 📌 3. XEM CHI TIẾT ĐƠN
-        // =======================================================
+        // ==========================================================
+        // 📌 CHI TIẾT ĐƠN
+        // ==========================================================
         public async Task<IActionResult> StopDetail(int id)
         {
             if (!IsDriver()) return Forbid();
 
             var driverId = GetCurrentDriverId();
-
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driverId);
 
             if (order == null) return NotFound();
-
             return View(order);
         }
 
-        // =======================================================
-        // 📌 4. BẮT ĐẦU GIAO (pending → shipping)
-        // =======================================================
+        // ==========================================================
+        // 📌 BẮT ĐẦU GIAO
+        // ==========================================================
         [HttpPost]
         public async Task<IActionResult> UpdateStatus(int id, string status)
         {
             if (!IsDriver()) return Forbid();
 
             var driverId = GetCurrentDriverId();
-
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driverId);
 
@@ -149,39 +133,35 @@ namespace WedNightFury.Controllers
             return RedirectToAction(nameof(Dashboard));
         }
 
-        // =======================================================
-        // 📌 5. GIAO THÀNH CÔNG (POD)
-        // =======================================================
+        // ==========================================================
+        // 📌 GIAO THÀNH CÔNG — MỞ TRANG UPLOAD POD
+        // ==========================================================
         public async Task<IActionResult> Delivered(int id)
         {
             if (!IsDriver()) return Forbid();
 
             var driverId = GetCurrentDriverId();
-
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driverId);
 
             if (order == null) return NotFound();
 
-            var vm = new DeliveredViewModel
+            return View(new DeliveredViewModel
             {
                 OrderId = order.Id,
                 Code = order.Code,
                 ReceiverName = order.ReceiverName,
                 ReceiverAddress = order.ReceiverAddress
-            };
-
-            return View(vm);
+            });
         }
 
+        // 📌 LƯU POD
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delivered(DeliveredViewModel model)
         {
             if (!IsDriver()) return Forbid();
 
             var driverId = GetCurrentDriverId();
-
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.Id == model.OrderId && o.DriverId == driverId);
 
@@ -189,40 +169,59 @@ namespace WedNightFury.Controllers
 
             if (model.PodImage == null)
             {
-                ModelState.AddModelError("PodImage", "Bạn phải upload ảnh POD!");
+                ModelState.AddModelError("PodImage", "Bạn phải tải lên ảnh POD!");
                 return View(model);
             }
 
-            // Lưu ảnh POD
             var folder = Path.Combine(_env.WebRootPath, "uploads/pod");
             Directory.CreateDirectory(folder);
 
             var fileName = $"{order.Code}_POD_{DateTime.Now:yyyyMMddHHmmss}.jpg";
-            var path = Path.Combine(folder, fileName);
+            var filePath = Path.Combine(folder, fileName);
 
-            using (var stream = new FileStream(path, FileMode.Create))
+            using (var stream = new FileStream(filePath, FileMode.Create))
                 await model.PodImage.CopyToAsync(stream);
 
             order.PodImagePath = "/uploads/pod/" + fileName;
             order.DeliveredAt = DateTime.Now;
-            order.DeliveredNote = model.Note;
             order.Status = "done";
 
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = "✔ Giao hàng thành công!";
-            return RedirectToAction(nameof(Dashboard));
+            TempData["Message"] = "✔ Đã giao hàng! Vui lòng thu COD nếu có.";
+            return RedirectToAction("StopDetail", new { id = order.Id });
         }
 
-        // =======================================================
-        // 📌 6. GIAO THẤT BẠI
-        // =======================================================
+        // ==========================================================
+        // 💰 XÁC NHẬN ĐÃ THU COD
+        // ==========================================================
+        public async Task<IActionResult> ConfirmCOD(int id)
+        {
+            if (!IsDriver()) return Forbid();
+
+            var driverId = GetCurrentDriverId();
+            var order = await _context.Orders
+                .FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driverId);
+
+            if (order == null) return NotFound();
+
+            order.IsCodPaid = true;
+            order.CodPaidAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Message"] = "💰 Đã thu COD!";
+            return RedirectToAction("StopDetail", new { id });
+        }
+
+        // ==========================================================
+        // 📌 GIAO THẤT BẠI
+        // ==========================================================
         public async Task<IActionResult> Failed(int id)
         {
             if (!IsDriver()) return Forbid();
 
             var driverId = GetCurrentDriverId();
-
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.Id == id && o.DriverId == driverId);
 
@@ -243,7 +242,6 @@ namespace WedNightFury.Controllers
             if (!IsDriver()) return Forbid();
 
             var driverId = GetCurrentDriverId();
-
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.Id == model.OrderId && o.DriverId == driverId);
 
@@ -257,6 +255,39 @@ namespace WedNightFury.Controllers
 
             TempData["Message"] = "✔ Đã lưu giao thất bại!";
             return RedirectToAction(nameof(Dashboard));
+        }
+
+        // ==========================================================
+        // 📜 LỊCH SỬ GIAO HÀNG
+        // ==========================================================
+        public async Task<IActionResult> History(DateTime? day, string status = "all")
+        {
+            if (!IsDriver()) return Forbid();
+
+            var driverId = GetCurrentDriverId();
+            if (driverId == null) return Unauthorized();
+
+            var query = _context.Orders
+                .Where(o => o.DriverId == driverId && (o.Status == "done" || o.Status == "failed"));
+
+            if (day.HasValue)
+            {
+                var d = day.Value.Date;
+                query = query.Where(o =>
+                    o.DeliveredAt.HasValue &&
+                    o.DeliveredAt.Value.Date == d
+                );
+            }
+
+            if (status != "all")
+                query = query.Where(o => o.Status == status);
+
+            query = query.OrderByDescending(o => o.DeliveredAt);
+
+            ViewBag.Day = day?.ToString("yyyy-MM-dd");
+            ViewBag.Status = status;
+
+            return View(await query.ToListAsync());
         }
     }
 }
