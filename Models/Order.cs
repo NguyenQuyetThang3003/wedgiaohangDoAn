@@ -63,6 +63,8 @@ namespace WedNightFury.Models
 
         [StringLength(200)]
         public string? Note { get; set; }
+        public decimal Cod { get; set; }
+
 
         // ============================
         // 📌 TRẠNG THÁI

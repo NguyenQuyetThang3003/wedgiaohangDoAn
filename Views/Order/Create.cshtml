@@ -5,7 +5,6 @@
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <div class="container py-5">
     <h2 class="text-center text-danger fw-bold mb-4">
@@ -83,17 +82,20 @@
 
                 <div class="col-md-4">
                     <label>Giá trị (VNĐ)</label>
-                    <input asp-for="Value" id="Value" class="form-control" oninput="formatCurrency(this)" />
+                    <input id="Value" class="form-control"
+                           oninput="formatCurrency(this); document.getElementById('ValueHidden').value=this.value.replace(/\D/g,'');" />
                 </div>
 
                 <div class="col-md-4">
                     <label>Kích thước (Dài)</label>
                     <input id="length" type="number" class="form-control" oninput="calculateShipping()" />
                 </div>
+
                 <div class="col-md-4">
                     <label>Rộng</label>
                     <input id="width" type="number" class="form-control" oninput="calculateShipping()" />
                 </div>
+
                 <div class="col-md-4">
                     <label>Cao</label>
                     <input id="height" type="number" class="form-control" oninput="calculateShipping()" />
@@ -114,7 +116,7 @@
                 <div class="col-md-4">
                     <label>COD</label>
                     <input id="codInput" type="text" class="form-control"
-                           oninput="formatCurrency(this); document.getElementById('CodAmountHidden').value=this.value.replace(/\\D/g,'');" />
+                           oninput="formatCurrency(this); document.getElementById('CodHidden').value=this.value.replace(/\D/g,'');" />
 
                     <div class="form-check mt-2">
                         <input id="codByValue" class="form-check-input" type="checkbox" onclick="useOrderValue()">
@@ -129,9 +131,10 @@
             </div>
         </div>
 
-        <!-- Hidden -->
+        <!-- HIDDEN REAL VALUES -->
         <input type="hidden" id="ShipFeeHidden" name="ShipFee" />
-        <input type="hidden" id="CodAmountHidden" name="CodAmount" />
+        <input type="hidden" id="CodHidden" name="CodAmount" />
+        <input type="hidden" id="ValueHidden" name="Value" />
 
         <input type="hidden" id="ProvinceHidden" name="Province" />
         <input type="hidden" id="DistrictHidden" name="District" />
@@ -148,14 +151,15 @@
 <script>
     // format tiền
     function formatCurrency(input) {
-        let value = input.value.replace(/\\D/g, "");
-        input.value = value ? new Intl.NumberFormat('vi-VN').format(value) : "";
+        let value = input.value.replace(/\D/g, "");
+        input.value = value ? new Intl.NumberFormat("vi-VN").format(value) : "";
     }
 
+    // COD theo giá trị hàng
     function useOrderValue() {
-        let v = document.getElementById("Value").value.replace(/\\D/g, '');
+        let v = document.getElementById("Value").value.replace(/\D/g, "");
         document.getElementById("codInput").value = new Intl.NumberFormat("vi-VN").format(v);
-        document.getElementById("CodAmountHidden").value = v;
+        document.getElementById("CodHidden").value = v;
     }
 
     // Tải tỉnh/huyện/xã
@@ -170,8 +174,7 @@
         provinces.forEach(x => p.innerHTML += `<option value="${x.Id}">${x.Name}</option>`);
 
         p.onchange = () => {
-            document.getElementById("ProvinceHidden").value =
-                p.options[p.selectedIndex].text.trim();
+            document.getElementById("ProvinceHidden").value = p.options[p.selectedIndex].text.trim();
             loadDistricts();
         };
     }
@@ -190,8 +193,7 @@
         );
 
         did.onchange = () => {
-            document.getElementById("DistrictHidden").value =
-                did.options[did.selectedIndex].text.trim();
+            document.getElementById("DistrictHidden").value = did.options[did.selectedIndex].text.trim();
             loadWards();
         };
     }
@@ -213,12 +215,11 @@
         );
 
         wid.onchange = () => {
-            document.getElementById("WardHidden").value =
-                wid.options[wid.selectedIndex].text.trim();
+            document.getElementById("WardHidden").value = wid.options[wid.selectedIndex].text.trim();
         };
     }
 
-    // Ship fee
+    // Tính ship fee
     function calculateShipping() {
         let w = +document.getElementById("Weight").value || 0;
         let d = +document.getElementById("length").value || 0;

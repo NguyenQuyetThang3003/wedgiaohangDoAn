@@ -1,0 +1,169 @@
+@model WedNightFury.Models.Order
+@{
+    ViewData["Title"] = "Điểm giao: " + Model.Code;
+    Layout = "~/Views/Shared/_LayoutDriver.cshtml";
+}
+
+<style>
+    .card-box {
+        background: #fff;
+        padding: 18px;
+        border-radius: 14px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+        margin-bottom: 18px;
+    }
+
+    .map-wrapper {
+        width: 100%;
+        height: 360px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #777;
+    }
+
+    .btn-driver {
+        width: 100%;
+        padding: 14px;
+        font-size: 17px;
+        font-weight: 600;
+        border-radius: 12px;
+    }
+
+    .info-row {
+        margin-bottom: 6px;
+        font-size: 16px;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #444;
+    }
+</style>
+
+<div class="container mt-3">
+
+    <h3 class="fw-bold text-danger mb-3">📦 ĐIỂM GIAO: @Model.Code</h3>
+
+    <div class="card-box">
+        <div class="info-row">
+            <span class="info-label">📌 Tạo đơn:</span>
+            @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">🚚 Đang giao lúc:</span>
+            @Model.AssignedAt?.ToString("dd/MM/yyyy HH:mm")
+        </div>
+
+        <hr />
+
+        <div class="info-row"><b>👤 Người nhận:</b> @Model.ReceiverName</div>
+        <div class="info-row"><b>📞 SĐT:</b> @Model.ReceiverPhone</div>
+        <div class="info-row"><b>📍 Địa chỉ:</b> @Model.ReceiverAddress</div>
+
+        <div class="info-row"><b>💰 Giá trị hàng:</b> @String.Format("{0:N0}", Model.Value) đ</div>
+        <div class="info-row"><b>💸 COD:</b> @String.Format("{0:N0}", Model.Cod) đ</div>
+        <div class="info-row"><b>🚛 Phí ship:</b> @String.Format("{0:N0}", Model.ShipFee) đ</div>
+
+        <hr />
+
+        <h5 class="fw-bold mt-3">🗺 Bản đồ giao hàng</h5>
+
+        <div id="map" class="map-wrapper">
+            <span id="map-status">⏳ Đang tải bản đồ...</span>
+        </div>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="row g-2 mt-3 mb-4">
+        <div class="col-6 col-md-3">
+            <a href="tel:@Model.ReceiverPhone" class="btn btn-outline-primary btn-driver">📞 Gọi khách</a>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <a href="https://zalo.me/@Model.ReceiverPhone" class="btn btn-outline-info btn-driver">💬 Nhắn Zalo</a>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <a target="_blank"
+               href="https://www.google.com/maps/dir/?api=1&destination=@(Model.Lat ?? 0),@(Model.Lng ?? 0)"
+               class="btn btn-dark btn-driver">📍 Điều hướng</a>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <button class="btn btn-success btn-driver" data-bs-toggle="modal" data-bs-target="#podModal">✔ Đã giao (POD)</button>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <button class="btn btn-danger btn-driver" data-bs-toggle="modal" data-bs-target="#failModal">✖ Giao thất bại</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL POD -->
+<div class="modal fade" id="podModal">
+    <div class="modal-dialog">
+        <form asp-controller="Trip" asp-action="CompleteDelivery" method="post" enctype="multipart/form-data" class="modal-content">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="modal-header"><h5 class="modal-title">📸 Chụp POD</h5></div>
+            <div class="modal-body">
+                <input type="file" name="podImage" class="form-control" accept="image/*" required />
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success">Xác nhận giao</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL FAILED -->
+<div class="modal fade" id="failModal">
+    <div class="modal-dialog">
+        <form asp-controller="Trip" asp-action="FailedDelivery" method="post" class="modal-content">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="modal-header"><h5 class="modal-title">❌ Báo thất bại</h5></div>
+            <div class="modal-body">
+                <textarea name="reason" class="form-control" rows="4" placeholder="Lý do giao thất bại..." required></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger">Xác nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MAP SCRIPT -->
+<script>
+    function initMap() {
+
+        const lat = @(Model.Lat ?? 0);
+        const lng = @(Model.Lng ?? 0);
+
+        if (lat === 0 || lng === 0) {
+            document.getElementById("map-status").innerHTML = "⚠ Không có tọa độ để hiển thị.";
+            return;
+        }
+
+        const pos = { lat: lat, lng: lng };
+
+        const map = new google.maps.Map(document.getElementById("map"), {
+            center: pos,
+            zoom: 17
+        });
+
+        new google.maps.Marker({
+            position: pos,
+            map: map,
+            title: "Điểm giao"
+        });
+
+        document.getElementById("map-status").style.display = "none";
+    }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY&callback=initMap" async defer></script>

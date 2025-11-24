@@ -1,0 +1,101 @@
+@model List<WedNightFury.Models.Order>
+
+@{
+    ViewData["Title"] = "Lộ trình hôm nay";
+    Layout = "~/Views/Shared/_LayoutDriver.cshtml";
+}
+
+<style>
+    .order-card {
+        border-radius: 12px;
+        border: none;
+        padding: 20px;
+        transition: 0.2s;
+    }
+
+    .order-card:hover {
+        transform: scale(1.01);
+        box-shadow: 0px 4px 16px rgba(0,0,0,0.1);
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #555;
+    }
+</style>
+
+<div class="container">
+
+    <h3 class="fw-bold mb-4">📍 Lộ trình giao hàng hôm nay</h3>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info shadow-sm">
+            Hôm nay bạn chưa có đơn nào cần giao.
+        </div>
+    }
+    else
+    {
+        foreach (var o in Model)
+        {
+            <div class="order-card shadow-sm bg-white mb-4">
+
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold">Đơn: @o.Code</h5>
+
+                    <span class="badge 
+                        @(o.Status == "pending" ? "bg-warning text-dark" :
+                          o.Status == "shipping" ? "bg-primary" :
+                          o.Status == "done" ? "bg-success" : "bg-danger")">
+                        @o.Status.ToUpper()
+                    </span>
+                </div>
+
+                <hr />
+
+                <!-- Info -->
+                <div class="row">
+
+                    <div class="col-md-6 mb-2">
+                        <p><span class="info-label">👤 Người nhận:</span> @o.ReceiverName</p>
+                        <p><span class="info-label">📞 SĐT:</span> @o.ReceiverPhone</p>
+                        <p><span class="info-label">📍 Địa chỉ:</span> @o.ReceiverAddress</p>
+                    </div>
+
+                    <div class="col-md-6 mb-2">
+                        <p><span class="info-label">📦 Sản phẩm:</span> @o.ProductName</p>
+                        <p><span class="info-label">⚖ Cân nặng:</span> @o.Weight kg</p>
+                        <p><span class="info-label">💰 COD:</span> @String.Format("{0:N0}", o.Cod) đ</p>
+                    </div>
+
+                </div>
+
+                <!-- Buttons -->
+                <div class="mt-3">
+
+                    <!-- Bắt đầu giao → đi đến StopDetail -->
+                    <a asp-controller="Trip" asp-action="StopDetail" asp-route-id="@o.Id"
+                       class="btn btn-sm btn-primary">
+                        🚀 Bắt đầu giao (Đi tới điểm giao)
+                    </a>
+
+                    <!-- Mở bản đồ -->
+                    <a asp-controller="Trip" asp-action="Map" asp-route-id="@o.Id"
+                       class="btn btn-sm btn-outline-dark">
+                        🗺 Bản đồ
+                    </a>
+
+                    <!-- Chi tiết -->
+                    <a asp-controller="Trip" asp-action="StopDetail" asp-route-id="@o.Id"
+                       class="btn btn-sm btn-outline-secondary">
+                        📄 Chi tiết
+                    </a>
+
+                </div>
+
+            </div>
+        }
+    }
+
+</div>
