@@ -1,6 +1,26 @@
 @model WedNightFury.Models.Order
 @{
     ViewData["Title"] = $"Điểm giao - {Model.Code}";
+
+    decimal ship = Model.ShipFee;
+    decimal cod  = Model.CodAmount;
+    string payer = Model.ShipPayer ?? "receiver";
+
+    // Tổng tiền khách phải trả cho tài xế
+    decimal totalCollect = 0;
+
+    if (cod <= 0)
+    {
+        // KHÔNG COD
+        totalCollect = (payer == "receiver") ? ship : 0;
+    }
+    else
+    {
+        // CÓ COD
+        totalCollect = (payer == "receiver") ? ship + cod : cod;
+    }
+
+    string shipPayerText = payer == "sender" ? "Người gửi" : "Người nhận";
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -49,14 +69,23 @@
     <div class="d-flex mb-2"><div class="label">Địa chỉ:</div><div class="val">@Model.ReceiverAddress</div></div>
 
     <div class="d-flex mb-2"><div class="label">Giá trị hàng:</div><div class="val">@Model.Value.ToString("N0") đ</div></div>
-    <div class="d-flex mb-2"><div class="label">COD:</div><div class="val">@Model.CodAmount.ToString("N0") đ</div></div>
-    <div class="d-flex mb-2"><div class="label">Phí Ship:</div><div class="val">@Model.ShipFee.ToString("N0") đ</div></div>
+    <div class="d-flex mb-2"><div class="label">COD (tiền hàng):</div><div class="val">@Model.CodAmount.ToString("N0") đ</div></div>
+    <div class="d-flex mb-2"><div class="label">Phí ship:</div><div class="val">@Model.ShipFee.ToString("N0") đ</div></div>
+    <div class="d-flex mb-2"><div class="label">Người trả ship:</div><div class="val">@shipPayerText</div></div>
 
     <hr />
 
-    <div class="d-flex mb-2"><div class="label">Tài xế phải nộp:</div>
+    <div class="d-flex mb-2">
+<div class="label">TỔNG KHÁCH PHẢI TRẢ:</div>
+        <div class="val text-danger">
+            @totalCollect.ToString("N0") đ
+        </div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Tài xế phải nộp:</div>
         <div class="val text-primary">
-            @((Model.CodAmount + Model.ShipFee).ToString("N0")) đ
+            @totalCollect.ToString("N0") đ
         </div>
     </div>
 
@@ -117,9 +146,9 @@
 
                 <div class="modal-body">
 
-                    <label class="fw-bold">Số tiền thu:</label>
+                    <label class="fw-bold">Số tiền thu COD:</label>
                     <input name="cod" class="form-control mb-3"
-                           value="@Model.CodAmount" readonly />
+                           value="@Model.CodAmount.ToString("N0")" readonly />
 
                     <label class="fw-bold">Chữ ký người nhận:</label>
                     <canvas id="signPad" style="width:100%;height:200px;border:1px solid #aaa;"></canvas>
@@ -143,7 +172,7 @@
     let pad;
 
     function openCodModal() {
-        modal = new bootstrap.Modal(document.getElementById("codModal"));
+modal = new bootstrap.Modal(document.getElementById("codModal"));
         modal.show();
 
         let canvas = document.getElementById("signPad");
@@ -151,12 +180,20 @@
     }
 
     function clearPad() {
-        pad.clear();
+        if (pad) {
+            pad.clear();
+        }
     }
 
-    document.querySelector("form").onsubmit = function () {
-        if (pad && !pad.isEmpty()) {
-            document.getElementById("signatureInput").value = pad.toDataURL();
+    // Gắn submit cho đúng form trong modal, tránh đụng form khác (nếu có)
+    document.addEventListener("DOMContentLoaded", function () {
+        const codForm = document.querySelector("#codModal form");
+        if (codForm) {
+            codForm.addEventListener("submit", function () {
+                if (pad && !pad.isEmpty()) {
+                    document.getElementById("signatureInput").value = pad.toDataURL();
+                }
+            });
         }
-    };
+    });
 </script>

@@ -39,7 +39,6 @@
         <label class="fw-bold mb-2">📌 Chọn nhanh vấn đề:</label>
 
         <div class="d-flex flex-wrap gap-2">
-
             <button type="button" class="btn btn-outline-primary quick-btn">
                 Mất đơn hàng
             </button>
@@ -67,7 +66,6 @@
             <button type="button" class="btn btn-outline-danger quick-btn fw-bold">
                 🚨 Hỗ trợ khẩn cấp
             </button>
-
         </div>
     </div>
 
@@ -75,7 +73,9 @@
     <div class="card border-0 shadow-sm rounded-4 p-4">
         <h5 class="fw-bold mb-3">📩 Nội dung yêu cầu hỗ trợ</h5>
 
-        <form method="post" action="/Support/Create">
+        @* dùng asp-action + AntiForgeryToken *@
+        <form asp-action="Create" asp-controller="Support" method="post">
+            @Html.AntiForgeryToken()
 
             <textarea class="form-control rounded-3 p-3"
                       name="message"
@@ -87,7 +87,6 @@
             <button class="btn btn-primary w-100 mt-3 py-3 rounded-3 fw-bold">
                 <i class="bi bi-send-fill me-2"></i> Gửi yêu cầu
             </button>
-
         </form>
     </div>
 
@@ -95,7 +94,7 @@
         <small>⏳ Thời gian phản hồi trung bình: 5–10 phút</small>
     </div>
 
-    <!-- HISTORY BUTTON (đã đưa vào container để căn giữa đúng chuẩn) -->
+    <!-- HISTORY BUTTON -->
     <div class="card shadow-sm border-0 rounded-4 p-3 mt-4">
         <a href="/Support/History" class="btn btn-outline-dark w-100 py-2 rounded-3 fw-bold">
             <i class="bi bi-journal-text me-2"></i> Nhật ký hỗ trợ & phản hồi
@@ -104,14 +103,12 @@
 
 </div>
 
-
 <!-- JS: Auto fill -->
 <script>
     document.querySelectorAll(".quick-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const text = btn.innerText;
             const textarea = document.getElementById("supportMessage");
-
             textarea.value = text + ": ";
             textarea.focus();
         });

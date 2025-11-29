@@ -10,6 +10,15 @@
         <i class="bi bi-journal-text me-2"></i> Nhật ký hỗ trợ của bạn
     </h3>
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
     @if (!Model.Any())
     {
         <div class="alert alert-info text-center py-4 shadow-sm">
@@ -20,12 +29,11 @@
     else
     {
         <div class="list-group">
-
             @foreach (var t in Model.OrderByDescending(x => x.CreatedAt))
             {
                 <div class="list-group-item mb-3 shadow-sm rounded-4 border-0 p-4">
 
-                    <!-- STATUS BADGE -->
+                    <!-- HEADER + STATUS -->
                     <div class="d-flex justify-content-between">
                         <small class="text-muted">
                             <i class="bi bi-clock me-1"></i> @t.CreatedAt.ToString("dd/MM/yyyy HH:mm")
@@ -55,27 +63,45 @@
                         </div>
                     </div>
 
-                    <!-- ADMIN REPLY -->
+                    <!-- ADMIN REPLY (thread text) -->
                     @if (!string.IsNullOrEmpty(t.Reply))
                     {
                         <div class="mb-2">
-                            <label class="fw-bold text-success">💬 Phản hồi từ hỗ trợ:</label>
-                            <div class="p-3 bg-white rounded-3 border">
+                            <label class="fw-bold text-success">💬 Phản hồi / hội thoại:</label>
+                            <div class="p-3 bg-white rounded-3 border" style="white-space:pre-line;">
                                 @t.Reply
                             </div>
                         </div>
 
-                        <small class="text-muted">
+                        <small class="text-muted d-block mb-2">
                             <i class="bi bi-calendar-check me-1"></i>
                             @t.RepliedAt?.ToString("dd/MM/yyyy HH:mm")
                         </small>
                     }
                     else
                     {
-                        <div class="text-muted fst-italic">
+                        <div class="text-muted fst-italic mb-2">
                             <i class="bi bi-chat-left-dots me-1"></i> Chưa có phản hồi.
                         </div>
                     }
+
+                    <!-- DRIVER REPLY FORM -->
+                    <form asp-action="AddReply" asp-controller="Support" method="post" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <div class="input-group">
+                            <input type="text"
+                                   name="replyText"
+                                   class="form-control"
+                                   placeholder="Trả lời thêm cho admin..." />
+                            <button class="btn btn-outline-primary">
+                                Gửi
+                            </button>
+                        </div>
+                        <small class="text-muted">
+                            Tin nhắn sẽ được thêm vào hội thoại và gửi cho bộ phận hỗ trợ.
+                        </small>
+                    </form>
 
                 </div>
             }
@@ -87,5 +113,4 @@
             <i class="bi bi-arrow-left me-1"></i> Quay lại hỗ trợ
         </a>
     </div>
-
 </div>

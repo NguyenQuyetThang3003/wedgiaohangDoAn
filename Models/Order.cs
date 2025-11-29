@@ -47,6 +47,7 @@ namespace WedNightFury.Models
         [StringLength(200)]
         public string? ReceiverAddress { get; set; }
 
+        // Tỉnh/thành phố người nhận
         public string? Province { get; set; }
 
         // ============================
@@ -55,16 +56,51 @@ namespace WedNightFury.Models
         [StringLength(200)]
         public string? ProductName { get; set; }
 
+        // Loại hàng (tài liệu, hàng dễ vỡ, điện tử...)
+        [StringLength(50)]
+        public string? GoodsType { get; set; }
+
+        // Khối lượng (kg)
         [Column(TypeName = "decimal(10,2)")]
         public decimal Weight { get; set; }
 
+        // Giá trị khai báo (VNĐ) – cũng là giá trị hàng để tính COD nếu chọn "thu bằng giá trị hàng"
         [Column(TypeName = "decimal(15,2)")]
         public decimal Value { get; set; }
 
         [StringLength(200)]
         public string? Note { get; set; }
+
+        // Trường cũ (giữ cho tương thích DB, không bắt buộc phải dùng)
         public decimal Cod { get; set; }
 
+        // ============================
+        // ⚙ CẤU HÌNH GIAO HÀNG
+        // ============================
+
+        // Khu vực giao nhận: inner / outer
+        [StringLength(20)]
+        public string? AreaType { get; set; }
+
+        // Phương thức gửi: pickup (nhân viên lấy) / hub (tự mang đến hub)
+        [StringLength(20)]
+        public string? PickupMethod { get; set; }
+
+        // Hub khách chọn nếu tự mang đến hub
+        [StringLength(100)]
+        public string? DropoffHub { get; set; }
+
+        // Mức dịch vụ: standard / fast / express
+        [StringLength(20)]
+        public string? ServiceLevel { get; set; }
+
+        // ============================
+        // 🚚 AI TRẢ PHÍ SHIP
+        // ============================
+        // "sender"  -> người gửi chịu phí ship
+        // "receiver"-> người nhận chịu phí ship
+        [StringLength(20)]
+        public string? ShipPayer { get; set; }
 
         // ============================
         // 📌 TRẠNG THÁI

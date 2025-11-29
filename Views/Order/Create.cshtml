@@ -11,12 +11,12 @@
         <i class="bi bi-truck"></i> TẠO ĐƠN HÀNG NIGHTFURY
     </h2>
 
-    <form asp-action="Create" method="post">
+    <form asp-action="Create" method="post" id="orderForm">
         @Html.AntiForgeryToken()
 
-        <!-- NGƯỜI GỬI -->
+        <!-- 1. NGƯỜI GỬI -->
         <div class="card p-3 mb-4">
-            <h5>NGƯỜI GỬI</h5>
+            <h5>1. NGƯỜI GỬI</h5>
             <div class="row g-3">
                 <div class="col-md-6">
                     <label>Tên người gửi</label>
@@ -33,9 +33,9 @@
             </div>
         </div>
 
-        <!-- NGƯỜI NHẬN -->
+        <!-- 2. NGƯỜI NHẬN -->
         <div class="card p-3 mb-4">
-            <h5>NGƯỜI NHẬN</h5>
+            <h5>2. NGƯỜI NHẬN</h5>
             <div class="row g-3">
                 <div class="col-md-6">
                     <label>Tên người nhận</label>
@@ -66,103 +66,197 @@
             </div>
         </div>
 
-        <!-- HÀNG HÓA -->
+        <!-- 3. THÔNG TIN HÀNG HÓA -->
         <div class="card p-3 mb-4">
-            <h5>HÀNG HÓA</h5>
+            <h5>3. THÔNG TIN HÀNG HÓA</h5>
             <div class="row g-3">
                 <div class="col-md-4">
                     <label>Tên hàng</label>
                     <input asp-for="ProductName" class="form-control" />
                 </div>
-
-                <div class="col-md-4">
-                    <label>Trọng lượng (gram)</label>
-                    <input asp-for="Weight" id="Weight" type="number" class="form-control" oninput="calculateShipping()" />
+<div class="col-md-4">
+                    <label>Loại hàng</label>
+                    <select name="GoodsType" class="form-select">
+                        <option value="">-- Chọn loại hàng --</option>
+                        <option value="document">Tài liệu / Hồ sơ</option>
+                        <option value="normal">Hàng thông thường</option>
+                        <option value="fragile">Hàng dễ vỡ</option>
+                        <option value="electronic">Điện tử / Giá trị cao</option>
+                    </select>
                 </div>
 
                 <div class="col-md-4">
-                    <label>Giá trị (VNĐ)</label>
+                    <label>Khối lượng (kg)</label>
+                    <input asp-for="Weight" id="Weight" type="number" step="0.1" min="0"
+                           class="form-control" oninput="calculateShipping()" />
+                    <small class="text-muted">Ví dụ: 1.5 kg</small>
+                </div>
+
+                <div class="col-md-4 mt-3">
+                    <label>Giá trị hàng (COD) (VNĐ)</label>
                     <input id="Value" class="form-control"
-                           oninput="formatCurrency(this); document.getElementById('ValueHidden').value=this.value.replace(/\D/g,'');" />
+                           oninput="formatCurrency(this);
+                                    document.getElementById('ValueHidden').value=this.value.replace(/\\D/g,'');" />
+                    <small class="text-muted">Nếu không COD thì để trống hoặc 0.</small>
                 </div>
 
-                <div class="col-md-4">
-                    <label>Kích thước (Dài)</label>
-                    <input id="length" type="number" class="form-control" oninput="calculateShipping()" />
-                </div>
-
-                <div class="col-md-4">
-                    <label>Rộng</label>
-                    <input id="width" type="number" class="form-control" oninput="calculateShipping()" />
-                </div>
-
-                <div class="col-md-4">
-                    <label>Cao</label>
-                    <input id="height" type="number" class="form-control" oninput="calculateShipping()" />
-                </div>
-            </div>
-        </div>
-
-        <!-- THANH TOÁN -->
-        <div class="card p-3 mb-4">
-            <h5>THANH TOÁN</h5>
-
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label>Phí vận chuyển</label>
-                    <input id="shipping-fee" class="form-control fw-bold text-danger" disabled />
-                </div>
-
-                <div class="col-md-4">
-                    <label>COD</label>
-                    <input id="codInput" type="text" class="form-control"
-                           oninput="formatCurrency(this); document.getElementById('CodHidden').value=this.value.replace(/\D/g,'');" />
-
-                    <div class="form-check mt-2">
-                        <input id="codByValue" class="form-check-input" type="checkbox" onclick="useOrderValue()">
-                        <label class="form-check-label">Thu bằng giá trị hàng</label>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
+                <div class="col-md-8 mt-3">
                     <label>Ghi chú</label>
                     <textarea asp-for="Note" class="form-control"></textarea>
                 </div>
             </div>
         </div>
 
+        <!-- 4–7. CẤU HÌNH GIAO HÀNG -->
+        <div class="card p-3 mb-4">
+            <h5>4. CẤU HÌNH GIAO HÀNG</h5>
+
+            <div class="row g-3">
+                <!-- Khu vực: nội / ngoại thành -->
+                <div class="col-md-4">
+                    <label>Khu vực giao nhận</label>
+                    <div class="btn-group d-flex" role="group" aria-label="Khu vực">
+                        <input type="radio" name="AreaType" id="area-inner" value="inner"
+                               class="btn-check" checked onchange="calculateShipping()" />
+                        <label class="btn btn-outline-secondary w-50" for="area-inner">Nội thành</label>
+
+                        <input type="radio" name="AreaType" id="area-outer" value="outer"
+                               class="btn-check" onchange="calculateShipping()" />
+                        <label class="btn btn-outline-secondary w-50" for="area-outer">Ngoại thành</label>
+                    </div>
+                </div>
+
+                <!-- Phương thức gửi -->
+                <div class="col-md-4">
+                    <label>Phương thức gửi hàng</label>
+                    <div class="btn-group d-flex" role="group" aria-label="Phương thức gửi">
+                        <input type="radio" name="PickupMethod" id="pickup-staff" value="pickup"
+class="btn-check" checked onchange="toggleHub();calculateShipping();" />
+                        <label class="btn btn-outline-primary w-50" for="pickup-staff">Nhân viên lấy hàng</label>
+
+                        <input type="radio" name="PickupMethod" id="pickup-hub" value="hub"
+                               class="btn-check" onchange="toggleHub();calculateShipping();" />
+                        <label class="btn btn-outline-primary w-50" for="pickup-hub">Tự đem đến hub</label>
+                    </div>
+                </div>
+
+                <!-- Hub -->
+                <div class="col-md-4" id="hub-wrapper">
+                    <label>Chọn hub</label>
+                    <select asp-for="DropoffHub" class="form-select" id="DropoffHub">
+                        <option value="">-- Chọn hub --</option>
+                        <option value="Hub Q1 - Nguyễn Huệ">Hub Q1 - Nguyễn Huệ</option>
+                        <option value="Hub Q7 - Phú Mỹ Hưng">Hub Q7 - Phú Mỹ Hưng</option>
+                        <option value="Hub Thủ Đức - Kha Vạn Cân">Hub Thủ Đức - Kha Vạn Cân</option>
+                        <option value="Hub Bình Thạnh - Điện Biên Phủ">Hub Bình Thạnh - Điện Biên Phủ</option>
+                    </select>
+                    <small class="text-muted">Chỉ bắt buộc nếu bạn tự mang hàng ra hub.</small>
+                </div>
+
+                <!-- Mức dịch vụ -->
+                <div class="col-md-6 mt-3">
+                    <label>Mức dịch vụ</label>
+                    <div class="btn-group d-flex" role="group" aria-label="Mức dịch vụ">
+                        <input type="radio" name="ServiceLevel" id="sv-standard" value="standard"
+                               class="btn-check" checked onchange="calculateShipping()" />
+                        <label class="btn btn-outline-success w-100" for="sv-standard">Tiêu chuẩn</label>
+
+                        <input type="radio" name="ServiceLevel" id="sv-fast" value="fast"
+                               class="btn-check" onchange="calculateShipping()" />
+                        <label class="btn btn-outline-success w-100" for="sv-fast">Nhanh</label>
+
+                        <input type="radio" name="ServiceLevel" id="sv-express" value="express"
+                               class="btn-check" onchange="calculateShipping()" />
+                        <label class="btn btn-outline-success w-100" for="sv-express">Hỏa tốc</label>
+                    </div>
+                </div>
+
+                <!-- Phí ship & COD -->
+                <div class="col-md-3 mt-3">
+                    <label>Phí vận chuyển dự kiến</label>
+                    <input id="shipping-fee" class="form-control fw-bold text-danger" disabled />
+                </div>
+
+                <div class="col-md-3 mt-3">
+                    <label>COD (tiền thu hộ)</label>
+                    <input id="codInput" type="text" class="form-control"
+oninput="formatCurrency(this);
+                                    document.getElementById('CodHidden').value=this.value.replace(/\\D/g,'');
+                                    updateSenderSummary();" />
+                    <div class="form-check mt-2">
+                        <input id="codByValue" class="form-check-input" type="checkbox" onclick="useOrderValue()">
+                        <label class="form-check-label">Thu bằng giá trị hàng</label>
+                    </div>
+                </div>
+
+                <!-- Ai trả ship -->
+                <div class="col-md-3 mt-3">
+                    <label>Ai trả phí vận chuyển?</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="ShipPayer"
+                               id="payer-sender" value="sender" onchange="updateSenderSummary()">
+                        <label class="form-check-label" for="payer-sender">Người gửi</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="ShipPayer"
+                               id="payer-receiver" value="receiver" checked onchange="updateSenderSummary()">
+                        <label class="form-check-label" for="payer-receiver">Người nhận</label>
+                    </div>
+                    <small class="text-muted">Mặc định: người nhận trả ship.</small>
+                </div>
+
+                <!-- CHỈ HIỂN THỊ PHẦN NGƯỜI GỬI QUAN TÂM -->
+                <div class="col-md-3 mt-3">
+                    <label>Phí ship người gửi chịu</label>
+                    <input id="sender-ship-fee" class="form-control fw-bold" disabled />
+                    <small class="text-muted">Nếu người nhận trả ship thì = 0.</small>
+                </div>
+
+                <div class="col-md-3 mt-3">
+                    <label>Tổng tiền shop dự kiến nhận được</label>
+                    <input id="sender-net" class="form-control fw-bold" disabled />
+                    <small class="text-muted">
+                        = Tiền hàng COD – phí ship shop chịu.
+                    </small>
+                </div>
+
+            </div>
+        </div>
+
         <!-- HIDDEN REAL VALUES -->
         <input type="hidden" id="ShipFeeHidden" name="ShipFee" />
-        <input type="hidden" id="CodHidden" name="CodAmount" />
+        <input type="hidden" id="CodHidden"   name="CodAmount" />
         <input type="hidden" id="ValueHidden" name="Value" />
 
         <input type="hidden" id="ProvinceHidden" name="Province" />
         <input type="hidden" id="DistrictHidden" name="District" />
-        <input type="hidden" id="WardHidden" name="Ward" />
+        <input type="hidden" id="WardHidden"     name="Ward" />
 
-        <!-- SUBMIT -->
         <div class="text-center">
             <button type="submit" class="btn btn-danger btn-lg px-5">GỬI NGAY</button>
         </div>
-
     </form>
 </div>
 
 <script>
-    // format tiền
+    // --- City người gửi (từ Profile) để check nội/ngoại thành ---
+const senderCity = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.SenderCity ?? ""));
+
+    // --------- FORMAT TIỀN ---------
     function formatCurrency(input) {
         let value = input.value.replace(/\D/g, "");
         input.value = value ? new Intl.NumberFormat("vi-VN").format(value) : "";
     }
 
-    // COD theo giá trị hàng
     function useOrderValue() {
         let v = document.getElementById("Value").value.replace(/\D/g, "");
-        document.getElementById("codInput").value = new Intl.NumberFormat("vi-VN").format(v);
+        document.getElementById("codInput").value =
+            new Intl.NumberFormat("vi-VN").format(v);
         document.getElementById("CodHidden").value = v;
+        updateSenderSummary();
     }
 
-    // Tải tỉnh/huyện/xã
+    // --------- ĐỊA GIỚI HÀNH CHÍNH ---------
     let provinces = [];
     fetch("https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json")
         .then(res => res.json())
@@ -174,7 +268,8 @@
         provinces.forEach(x => p.innerHTML += `<option value="${x.Id}">${x.Name}</option>`);
 
         p.onchange = () => {
-            document.getElementById("ProvinceHidden").value = p.options[p.selectedIndex].text.trim();
+            document.getElementById("ProvinceHidden").value =
+                p.options[p.selectedIndex].text.trim();
             loadDistricts();
         };
     }
@@ -193,7 +288,8 @@
         );
 
         did.onchange = () => {
-            document.getElementById("DistrictHidden").value = did.options[did.selectedIndex].text.trim();
+            document.getElementById("DistrictHidden").value =
+                did.options[did.selectedIndex].text.trim();
             loadWards();
         };
     }
@@ -208,36 +304,180 @@
 
         if (!pid || !did) return;
 
-        let district = provinces.find(x => x.Id == pid).Districts.find(d => d.Id == did);
+        let district = provinces.find(x => x.Id == pid)
+                                .Districts.find(d => d.Id == did);
 
         district.Wards.forEach(w =>
             wid.innerHTML += `<option value="${w.Id}">${w.Name}</option>`
         );
 
         wid.onchange = () => {
-            document.getElementById("WardHidden").value = wid.options[wid.selectedIndex].text.trim();
+            document.getElementById("WardHidden").value =
+                wid.options[wid.selectedIndex].text.trim();
         };
     }
 
-    // Tính ship fee
+    // --------- HUB ---------
+    function toggleHub() {
+        const hubWrap = document.getElementById("hub-wrapper");
+        const methodInput =
+        document.querySelector('input[name="PickupMethod"]:checked');
+        if (!hubWrap) return;
+
+        if (methodInput && methodInput.value === "hub") {
+            hubWrap.style.display = "block";
+        } else {
+            hubWrap.style.display = "none";
+            const hubSelect = document.getElementById("DropoffHub");
+            if (hubSelect) hubSelect.value = "";
+        }
+    }
+
+    // --------- TÍNH PHÍ VẬN CHUYỂN ---------
     function calculateShipping() {
-        let w = +document.getElementById("Weight").value || 0;
-        let d = +document.getElementById("length").value || 0;
-        let r = +document.getElementById("width").value || 0;
-        let c = +document.getElementById("height").value || 0;
+        let w = parseFloat(
+            (document.getElementById("Weight").value || "0").replace(",", ".")
+        ) || 0;
 
-        if (!w && !d && !r && !c) return;
+        if (w <= 0) {
+            document.getElementById("shipping-fee").value = "";
+            document.getElementById("ShipFeeHidden").value = "";
+            updateSenderSummary();
+            return;
+        }
 
-        let vol = (d * r * c) / 6000 * 1000;
-        let cw = Math.max(w, vol);
+        let areaInput = document.querySelector('input[name="AreaType"]:checked');
+        let area = areaInput ? areaInput.value : "inner";
 
-        let base = cw <= 500 ? 25000 :
-                   cw <= 1000 ? 35000 :
-                   35000 + Math.ceil((cw - 1000) / 500) * 5000;
+        let methodInput =
+            document.querySelector('input[name="PickupMethod"]:checked');
+        let method = methodInput ? methodInput.value : "pickup";
+
+        let serviceInput =
+            document.querySelector('input[name="ServiceLevel"]:checked');
+        let service = serviceInput ? serviceInput.value : "standard";
+
+        let basePerKg = area === "inner" ? 15000 : 20000;
+        let fee = basePerKg * w;
+
+        if (method === "pickup") {
+            fee += 10000; // Nhân viên đến lấy hàng
+        }
+
+        let factor = 1.0;
+        if (service === "fast")    factor = 1.2;
+        if (service === "express") factor = 1.5;
+
+        fee = Math.round(fee * factor);
 
         document.getElementById("shipping-fee").value =
-            new Intl.NumberFormat("vi-VN").format(base) + " đ";
+            new Intl.NumberFormat("vi-VN").format(fee) + " đ";
+        document.getElementById("ShipFeeHidden").value = fee;
 
-        document.getElementById("ShipFeeHidden").value = base;
+        updateSenderSummary();
     }
+
+    // --------- TỔNG TIỀN SHOP NHẬN ĐƯỢC & PHÍ SHIP SHOP CHỊU ---------
+    // Quy ước:
+    // - SenderShipFee:
+    //      + Nếu ShipPayer = sender  => = ShipFee
+    //      + Nếu ShipPayer = receiver => = 0
+    // - SenderNet (tiền shop nhận được):
+    //      + Nếu COD > 0 => = COD - SenderShipFee (không âm)
+    //      + Nếu không COD => = 0 (shop không nhận COD, chỉ gửi hàng giúp)
+    function updateSenderSummary() {
+        const shipRaw = document.getElementById("ShipFeeHidden").value || "0";
+        const codRaw  = document.getElementById("CodHidden").value    || "0";
+
+        const ship = parseInt(shipRaw, 10) || 0;
+        const cod  = parseInt(codRaw, 10)  || 0;
+
+        const payerInput =
+            document.querySelector('input[name="ShipPayer"]:checked');
+        const payer = payerInput ? payerInput.value : "receiver";
+
+        let senderShip = 0;
+        if (payer === "sender") {
+            senderShip = ship;
+        } else {
+            senderShip = 0;
+        }
+
+        let net = 0;
+        if (cod > 0) {
+net = cod - senderShip;
+            if (net < 0) net = 0;
+        } else {
+            net = 0;
+        }
+
+        const senderShipInput = document.getElementById("sender-ship-fee");
+        const senderNetInput  = document.getElementById("sender-net");
+
+        if (senderShipInput) {
+            senderShipInput.value = senderShip > 0
+                ? new Intl.NumberFormat("vi-VN").format(senderShip) + " đ"
+                : "0 đ";
+        }
+        if (senderNetInput) {
+            senderNetInput.value = net > 0
+                ? new Intl.NumberFormat("vi-VN").format(net) + " đ"
+                : "0 đ";
+        }
+    }
+
+    // --------- VALIDATE NỘI / NGOẠI THÀNH ---------
+    function validateArea(senderCityName, receiverProvinceName, area) {
+        const s = (senderCityName       || "").trim().toLowerCase();
+        const r = (receiverProvinceName || "").trim().toLowerCase();
+
+        if (!s || !r) return { ok: true, message: "" }; // thiếu dữ liệu
+
+        if (area === "inner" && s !== r) {
+            return {
+                ok: false,
+                message:
+                    "Bạn đang chọn khu vực 'Nội thành' nhưng tỉnh/TP người gửi (" +
+                    senderCityName + ") khác tỉnh/TP người nhận (" +
+                    receiverProvinceName +
+                    "). Vui lòng chọn 'Ngoại thành'."
+            };
+        }
+
+        if (area === "outer" && s === r) {
+            return {
+                ok: false,
+                message:
+                    "Bạn đang chọn khu vực 'Ngoại thành' nhưng người gửi và người nhận cùng tỉnh/TP (" +
+                    senderCityName +
+                    "). Vui lòng chọn 'Nội thành'."
+            };
+        }
+
+        return { ok: true, message: "" };
+    }
+
+    // --------- INIT ---------
+    document.addEventListener("DOMContentLoaded", function () {
+        toggleHub();
+        calculateShipping();
+        updateSenderSummary();
+
+        const form = document.getElementById("orderForm");
+        if (form) {
+            form.addEventListener("submit", function (e) {
+                const provinceName =
+                    document.getElementById("ProvinceHidden").value || "";
+                const areaInput =
+                    document.querySelector('input[name="AreaType"]:checked');
+                const area = areaInput ? areaInput.value : "inner";
+
+                const result = validateArea(senderCity, provinceName, area);
+                if (!result.ok) {
+                    e.preventDefault();
+                    alert(result.message);
+                }
+            });
+        }
+    });
 </script>
