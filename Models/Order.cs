@@ -152,5 +152,12 @@ namespace WedNightFury.Models
 
         public bool IsCodPaid { get; set; } = false;
         public DateTime? CodPaidAt { get; set; }
+        // 🎫 KHUYẾN MÃI
+        // ============================
+        [StringLength(50)]
+        public string? DiscountCode { get; set; }
+
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal DiscountAmount { get; set; } = 0;
     }
 }

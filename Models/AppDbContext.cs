@@ -14,6 +14,11 @@ namespace WedNightFury.Models
         public DbSet<Faq> Faqs { get; set; }
         public DbSet<Receiver> Receivers { get; set; }
         public DbSet<SupportTicket> SupportTickets { get; set; }
+        public DbSet<Region> Regions { get; set; }
+        public DbSet<Hub> Hubs { get; set; }
+        public DbSet<Promotion> Promotions { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+        
 
     }
 }
