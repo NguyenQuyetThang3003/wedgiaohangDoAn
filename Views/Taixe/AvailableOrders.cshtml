@@ -33,16 +33,15 @@
     }
 </style>
 
-
 <h2 class="fw-bold text-danger mb-4">
-    <i class="bi bi-box-seam-fill"></i> ĐƠN HÀNG CHƯA NHẬN
+    <i class="bi bi-box-seam-fill"></i> ĐƠN HÀNG CHƯA NHẬN (HỎA TỐC)
 </h2>
 
 @if (!Model.Any())
 {
     <div class="empty-box">
         <img src="/images/empty.png" width="140" class="mb-3" />
-        <h5 class="text-muted">Không có đơn nào đang chờ nhận</h5>
+        <h5 class="text-muted">Không có đơn hỏa tốc nào đang chờ nhận</h5>
     </div>
 }
 else
@@ -53,11 +52,13 @@ else
             <div class="col-md-6 col-lg-4">
                 <div class="order-card">
 
-                    <h5 class="fw-bold text-primary">
+                    <h5 class="fw-bold text-primary mb-1">
                         <i class="bi bi-receipt"></i> @o.Code
                     </h5>
 
-                    <div class="mt-2 small">
+                    <span class="badge bg-danger mb-2">Hỏa tốc</span>
+
+                    <div class="mt-1 small">
                         <div><b>Người nhận:</b> @o.ReceiverName</div>
                         <div><b>Địa chỉ:</b> @o.ReceiverAddress</div>
                         <div><b>Giá trị:</b> @o.Value.ToString("N0") đ</div>

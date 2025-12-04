@@ -15,9 +15,9 @@ namespace WedNightFury.Controllers
             _context = context;
         }
 
-        // =========================
-        // GET /Order/Create
-        // =========================
+        // =========================================================
+        // GET /Order/Create – KHÁCH TẠO ĐƠN
+        // =========================================================
         public IActionResult Create()
         {
             // 🔒 Kiểm tra đăng nhập
@@ -48,9 +48,9 @@ namespace WedNightFury.Controllers
             return View(model);
         }
 
-        // =========================
-        // POST /Order/Create
-        // =========================
+        // =========================================================
+        // POST /Order/Create – LƯU ĐƠN
+        // =========================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create(Order model)
@@ -81,7 +81,7 @@ namespace WedNightFury.Controllers
             string detail = model.ReceiverAddress ?? string.Empty;
 
             if (!string.IsNullOrWhiteSpace(ward) ||
-!string.IsNullOrWhiteSpace(district) ||
+                !string.IsNullOrWhiteSpace(district) ||
                 !string.IsNullOrWhiteSpace(province))
             {
                 if (!string.IsNullOrWhiteSpace(detail))
@@ -98,9 +98,6 @@ namespace WedNightFury.Controllers
             model.Status     = "pending";
             model.CreatedAt  = DateTime.Now;
             model.CustomerId = userId.Value;
-
-            // ⚠ Bỏ qua ModelState.IsValid cho đơn hàng (tránh bị kẹt do decimal/culture)
-            // Nếu muốn validate sau này, có thể thêm kiểm tra riêng.
 
             _context.Orders.Add(model);
             _context.SaveChanges();
@@ -119,9 +116,9 @@ namespace WedNightFury.Controllers
             return decimal.TryParse(raw, out var v) ? v : 0;
         }
 
-        // =========================
-        // /Order/Success
-        // =========================
+        // =========================================================
+        // /Order/Success – THÔNG BÁO SAU KHI TẠO ĐƠN
+        // =========================================================
         public IActionResult Success()
         {
             ViewBag.OrderId   = TempData["OrderId"];
@@ -129,44 +126,74 @@ namespace WedNightFury.Controllers
             return View();
         }
 
-        // =========================
-        // DANH SÁCH ĐƠN (dùng cho admin)
-        // =========================
+        // =========================================================
+        // /Order/Manage – QUẢN LÝ VẬN ĐƠN (KHÁCH / ADMIN)
+        // =========================================================
         public IActionResult Manage(string? status, DateTime? startDate, DateTime? endDate)
         {
             var q = _context.Orders.AsQueryable();
 
+            // Lọc theo trạng thái (chung với bên tài xế)
             if (!string.IsNullOrEmpty(status) && status != "all")
-                q = q.Where(o => o.Status == status);
+            {
+                if (status == "cancelled")
+                {
+                    // "Đã hủy" hiển thị cả cancelled + failed
+                    q = q.Where(o => o.Status == "cancelled" || o.Status == "failed");
+                }
+                else
+                {
+                    q = q.Where(o => o.Status == status);
+                }
+            }
 
+            // Lọc ngày tạo
             if (startDate.HasValue)
-                q = q.Where(o => o.CreatedAt >= startDate.Value);
+            {
+                var from = startDate.Value.Date;
+                q = q.Where(o => o.CreatedAt >= from);
+            }
 
             if (endDate.HasValue)
-                q = q.Where(o => o.CreatedAt <= endDate.Value);
+            {
+                // < endDate + 1 day để không miss giờ trong ngày đó
+                var to = endDate.Value.Date.AddDays(1);
+                q = q.Where(o => o.CreatedAt < to);
+            }
 
-            ViewBag.TotalOrders     = _context.Orders.Count();
-            ViewBag.PendingOrders   = _context.Orders.Count(o => o.Status == "pending");
-            ViewBag.ShippingOrders  = _context.Orders.Count(o => o.Status == "shipping");
-            ViewBag.DoneOrders      = _context.Orders.Count(o => o.Status == "done");
-            ViewBag.CancelledOrders = _context.Orders.Count(o => o.Status == "cancelled");
+            // Thống kê theo bộ lọc hiện tại
+            ViewBag.TotalOrders     = q.Count();
+            ViewBag.PendingOrders   = q.Count(o => o.Status == "pending");
+            ViewBag.ShippingOrders  = q.Count(o => o.Status == "shipping");
+            ViewBag.DoneOrders      = q.Count(o => o.Status == "done");
+            ViewBag.CancelledOrders = q.Count(o => o.Status == "cancelled" || o.Status == "failed");
 
-            return View(q.OrderByDescending(o => o.CreatedAt).ToList());
+            var list = q
+                .OrderByDescending(o => o.CreatedAt)
+                .ToList();
+
+            return View(list);
         }
 
-        // =========================
-// ĐƠN CẦN XỬ LÝ (pending + shipping)
-        // =========================
+        // =========================================================
+        // /Order/Pending – ĐƠN CẦN XỬ LÝ (pending + shipping)
+        // =========================================================
         public IActionResult Pending(DateTime? startDate, DateTime? endDate)
         {
             var q = _context.Orders
                 .Where(o => o.Status == "pending" || o.Status == "shipping");
 
             if (startDate.HasValue)
-                q = q.Where(o => o.CreatedAt >= startDate.Value);
+            {
+                var from = startDate.Value.Date;
+                q = q.Where(o => o.CreatedAt >= from);
+            }
 
             if (endDate.HasValue)
-                q = q.Where(o => o.CreatedAt <= endDate.Value);
+            {
+                var to = endDate.Value.Date.AddDays(1);
+                q = q.Where(o => o.CreatedAt < to);
+            }
 
             ViewBag.StartDate = startDate?.ToString("yyyy-MM-dd");
             ViewBag.EndDate   = endDate?.ToString("yyyy-MM-dd");
@@ -174,14 +201,43 @@ namespace WedNightFury.Controllers
             return View(q.OrderByDescending(o => o.CreatedAt).ToList());
         }
 
-        // =========================
-        // Chi tiết đơn
-        // =========================
+        // =========================================================
+        // /Order/Details/{id} – CHI TIẾT ĐƠN
+        // =========================================================
         public IActionResult Details(int id)
         {
             var order = _context.Orders.FirstOrDefault(o => o.Id == id);
             if (order == null) return NotFound();
             return View(order);
+        }
+
+        // =========================================================
+        // POST /Order/UpdateStatus – ĐỔI TRẠNG THÁI TỪ MÀN QUẢN LÝ
+        // (dropdown "Trạng thái" ở view Manage)
+        // =========================================================
+        [HttpPost]
+        public IActionResult UpdateStatus(int id, string newStatus)
+        {
+            var order = _context.Orders.FirstOrDefault(o => o.Id == id);
+            if (order == null) return NotFound();
+
+            order.Status = newStatus;
+
+            // Nếu cập nhật sang Hoàn tất / Hủy thì set mốc thời gian nếu chưa có
+            if (newStatus == "done" && !order.DeliveredAt.HasValue)
+            {
+                order.DeliveredAt = DateTime.Now;
+            }
+
+            if ((newStatus == "cancelled" || newStatus == "failed") && !order.FailedAt.HasValue)
+            {
+                order.FailedAt = DateTime.Now;
+            }
+
+            _context.SaveChanges();
+
+            TempData["Message"] = "Đã cập nhật trạng thái đơn.";
+            return RedirectToAction(nameof(Manage));
         }
     }
 }

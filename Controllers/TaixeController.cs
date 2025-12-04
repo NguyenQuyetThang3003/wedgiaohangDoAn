@@ -34,7 +34,7 @@ namespace WedNightFury.Controllers
         }
 
         // ==========================================================
-        // 📌 DASHBOARD – ĐƠN HÔM NAY
+        // 📌 DASHBOARD – CÁC ĐƠN ĐANG PHỤ TRÁCH (PENDING / ASSIGNED / SHIPPING)
         // ==========================================================
         public async Task<IActionResult> Dashboard()
         {
@@ -43,15 +43,15 @@ namespace WedNightFury.Controllers
             var driverId = GetCurrentDriverId();
             if (driverId == null) return RedirectToAction("Login", "Auth");
 
-            var today = DateTime.Today;
-
             var orders = await _context.Orders
-                .Where(o => o.DriverId == driverId && o.DeliveryDate == today)
+                .Where(o => o.DriverId == driverId &&
+                            (o.Status == "pending" ||
+                             o.Status == "assigned" ||
+                             o.Status == "shipping"))
                 .OrderBy(o =>
                     o.Status == "pending" ? 1 :
-                    o.Status == "shipping" ? 2 :
-                    o.Status == "done" ? 3 :
-                    o.Status == "failed" ? 4 : 5
+                    o.Status == "assigned" ? 2 :
+                    o.Status == "shipping" ? 3 : 4
                 )
                 .ToListAsync();
 
@@ -59,21 +59,25 @@ namespace WedNightFury.Controllers
         }
 
         // ==========================================================
-        // 📌 ĐƠN HÀNG CHƯA NHẬN
+        // 📌 ĐƠN HÀNG CHƯA NHẬN (CHỈ HIỆN ĐƠN HỎA TỐC)
         // ==========================================================
         public async Task<IActionResult> AvailableOrders()
         {
             if (!IsDriver()) return Forbid();
 
             var orders = await _context.Orders
-                .Where(o => o.DriverId == null && o.Status == "pending")
+                .Where(o =>
+                    o.DriverId == null &&
+                    o.Status == "pending" &&
+                    (o.ServiceLevel ?? "").ToLower() == "express"   // chỉ HỎA TỐC
+                )
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
             return View(orders);
         }
 
-        // 📌 TÀI XẾ NHẬN ĐƠN
+        // 📌 TÀI XẾ NHẬN ĐƠN (CHỈ CHO ĐƠN HỎA TỐC)
         [HttpPost]
         public async Task<IActionResult> AcceptOrder(int id)
         {
@@ -82,16 +86,34 @@ namespace WedNightFury.Controllers
             var driverId = GetCurrentDriverId();
             if (driverId == null) return Unauthorized();
 
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
+            var order = await _context.Orders
+                .FirstOrDefaultAsync(o => o.Id == id);
             if (order == null) return NotFound();
 
+            // Không phải đơn hỏa tốc → không cho nhận
+            var level = (order.ServiceLevel ?? "").ToLower();
+            if (level != "express")
+            {
+                TempData["Message"] = "Chỉ đơn hỏa tốc mới được tài xế nhận trực tiếp. Đơn thường do Admin phân công.";
+                return RedirectToAction(nameof(AvailableOrders));
+            }
+
+            // Đơn đã có tài xế hoặc không còn pending
+            if (order.DriverId != null || order.Status != "pending")
+            {
+                TempData["Message"] = "Đơn đã được xử lý hoặc gán cho tài xế khác.";
+                return RedirectToAction(nameof(AvailableOrders));
+            }
+
+            // Gán đơn cho tài xế
             order.DriverId = driverId;
             order.AssignedAt = DateTime.Now;
             order.DeliveryDate = DateTime.Today;
+            order.Status = "assigned";   // hoặc "shipping" tùy flow của bạn
 
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = "✔ Bạn đã nhận đơn!";
+            TempData["Message"] = "Bạn đã nhận đơn hỏa tốc.";
             return RedirectToAction(nameof(AvailableOrders));
         }
 
@@ -129,7 +151,7 @@ namespace WedNightFury.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = "✔ Đã bắt đầu giao!";
+            TempData["Message"] = "Đã bắt đầu giao.";
             return RedirectToAction(nameof(Dashboard));
         }
 
@@ -169,7 +191,7 @@ namespace WedNightFury.Controllers
 
             if (model.PodImage == null)
             {
-                ModelState.AddModelError("PodImage", "Bạn phải tải lên ảnh POD!");
+                ModelState.AddModelError("PodImage", "Bạn phải tải lên ảnh POD.");
                 return View(model);
             }
 
@@ -188,7 +210,7 @@ namespace WedNightFury.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = "✔ Đã giao hàng! Vui lòng thu COD nếu có.";
+            TempData["Message"] = "Đã giao hàng. Vui lòng thu COD nếu có.";
             return RedirectToAction("StopDetail", new { id = order.Id });
         }
 
@@ -210,7 +232,7 @@ namespace WedNightFury.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = "💰 Đã thu COD!";
+            TempData["Message"] = "Đã ghi nhận thu COD.";
             return RedirectToAction("StopDetail", new { id });
         }
 
@@ -253,7 +275,7 @@ namespace WedNightFury.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = "✔ Đã lưu giao thất bại!";
+            TempData["Message"] = "Đã lưu giao thất bại.";
             return RedirectToAction(nameof(Dashboard));
         }
 

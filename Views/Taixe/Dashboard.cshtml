@@ -7,21 +7,31 @@
     <div class="alert alert-info">@TempData["Message"]</div>
 }
 
-<table class="table table-striped table-bordered align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th style="width:150px;">Mã đơn</th>
-            <th>Người nhận</th>
-            <th>Địa chỉ</th>
-            <th style="width:160px;">Giá trị</th>
-            <th style="width:120px;">Trạng thái</th>
-            <th style="width:200px;">Thao tác</th>
-        </tr>
-    </thead>
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-light border">
+        Hiện bạn chưa có đơn hàng nào được phân công.
+    </div>
+}
+else
+{
+    <table class="table table-striped table-bordered align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th style="width:150px;">Mã đơn</th>
+                <th>Người nhận</th>
+                <th>Địa chỉ</th>
+                <th style="width:160px;" class="text-end">Giá trị</th>
+                <th style="width:120px;">Trạng thái</th>
+                <th style="width:260px;">Thao tác</th>
+            </tr>
+        </thead>
 
-    <tbody>
+        <tbody>
         @foreach (var o in Model)
         {
+            var status = (o.Status ?? "").ToLower();
+
             <tr>
                 <td>
                     <a asp-controller="Taixe"
@@ -40,27 +50,30 @@
                 </td>
 
                 <td>
-                    @if (o.Status == "pending")
+                    @if (status == "pending" || status == "assigned")
                     {
-                        <span class="badge bg-warning text-dark px-3 py-2">Chờ xử lý</span>
+                        <span class="badge bg-warning text-dark px-3 py-2">Chờ giao</span>
                     }
-                    else if (o.Status == "shipping")
+                    else if (status == "shipping")
                     {
                         <span class="badge bg-primary px-3 py-2">Đang giao</span>
                     }
-                    else if (o.Status == "done")
+                    else if (status == "done")
                     {
                         <span class="badge bg-success px-3 py-2">Hoàn tất</span>
                     }
-                    else if (o.Status == "failed")
+                    else if (status == "failed")
                     {
                         <span class="badge bg-danger px-3 py-2">Thất bại</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-light text-dark px-3 py-2">Không rõ</span>
                     }
                 </td>
 
                 <td>
                     <div class="d-flex gap-2">
-
                         <!-- Nút Xem -->
                         <a asp-controller="Taixe"
                            asp-action="StopDetail"
@@ -69,12 +82,12 @@
                             Xem
                         </a>
 
-                        <!-- Nút Bắt đầu giao (pending → shipping) -->
-                        @if (o.Status == "pending")
+                        @* PENDING / ASSIGNED → BẮT ĐẦU GIAO *@
+                        @if (status == "pending" || status == "assigned")
                         {
                             <form asp-controller="Taixe"
                                   asp-action="UpdateStatus"
-                                  method="post">
+                                  method="post" class="d-inline">
                                 <input type="hidden" name="id" value="@o.Id" />
                                 <button name="status"
                                         value="shipping"
@@ -83,20 +96,43 @@
                                 </button>
                             </form>
                         }
-                        else if (o.Status == "shipping")
+                        @* ĐANG GIAO → ĐÃ GIAO / THẤT BẠI *@
+                        else if (status == "shipping")
                         {
-                            <span class="badge bg-info text-dark px-3 py-2">Đang giao…</span>
+                            <a asp-controller="Taixe"
+                               asp-action="Delivered"
+                               asp-route-id="@o.Id"
+                               class="btn btn-success btn-sm">
+                                Đã giao
+                            </a>
+
+                            <a asp-controller="Taixe"
+                               asp-action="Failed"
+                               asp-route-id="@o.Id"
+                               class="btn btn-danger btn-sm">
+                                Thất bại
+                            </a>
+                        }
+                        @* ĐÃ GIAO & CÓ COD CHƯA THU → XÁC NHẬN COD *@
+                        else if (status == "done" && o.CodAmount > 0 && !o.IsCodPaid)
+                        {
+                            <a asp-controller="Taixe"
+                               asp-action="ConfirmCOD"
+                               asp-route-id="@o.Id"
+                               class="btn btn-warning btn-sm">
+                                Xác nhận COD
+                            </a>
                         }
                     </div>
                 </td>
             </tr>
         }
-    </tbody>
-</table>
+        </tbody>
+    </table>
+}
 
 <style>
     .table td, .table th {
         vertical-align: middle !important;
     }
 </style>
-    
