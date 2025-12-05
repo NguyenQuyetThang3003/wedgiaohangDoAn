@@ -1,4 +1,5 @@
 @model WedNightFury.Models.Order
+
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
 
@@ -7,7 +8,7 @@
     decimal cod  = Model.CodAmount;
     string payer = Model.ShipPayer ?? "receiver";
 
-    // tổng tiền cần thu khách
+    // Tổng tiền cần thu khách
     decimal totalCollect = 0;
 
     if (cod <= 0)
@@ -34,26 +35,39 @@
             <div class="card mb-3 shadow-sm">
                 <div class="card-header bg-light fw-bold">Thông tin đơn</div>
                 <div class="card-body">
-                    <p><strong>Mã đơn hàng:</strong> 12300@Model.Id</p>
                     <p>
-                        <strong>Ngày tạo:</strong> @(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có")
+                        <strong>Mã đơn hàng:</strong>
+                        12300@Model.Id
+                    </p>
+                    <p>
+                        <strong>Ngày tạo:</strong>
+                        @(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có")
                     </p>
                     <p>
                         <strong>Trạng thái:</strong>
                         @switch (Model.Status)
                         {
                             case "pending":
-                                <span class="badge bg-info">Chờ xử lý</span>; break;
+                                @:<span class="badge bg-info">Chờ xử lý</span>
+                                break;
                             case "shipping":
-                                <span class="badge bg-warning text-dark">Đang vận chuyển</span>; break;
+                                @:<span class="badge bg-warning text-dark">Đang vận chuyển</span>
+                                break;
                             case "done":
-                                <span class="badge bg-success">Hoàn tất</span>; break;
+                                @:<span class="badge bg-success">Hoàn tất</span>
+                                break;
+                            case "failed":
+                                @:<span class="badge bg-danger">Giao thất bại</span>
+                                break;
                             case "cancelled":
-                                <span class="badge bg-danger">Đã hủy</span>; break;
+                                @:<span class="badge bg-danger">Đã hủy</span>
+                                break;
                             default:
-                                <span class="badge bg-secondary">Không xác định</span>; break;
+                                @:<span class="badge bg-secondary">Không xác định</span>
+                                break;
                         }
                     </p>
+
                     <p>
                         <strong>Trạng thái thanh toán COD:</strong>
                         @if (Model.CodAmount <= 0)
@@ -72,10 +86,14 @@
                         }
                         else
                         {
-<span class="text-danger fw-bold">Chưa đối soát COD</span>
+                            <span class="text-danger fw-bold">Chưa đối soát COD</span>
                         }
                     </p>
-                    <p><strong>Ghi chú:</strong> @(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")</p>
+
+                    <p>
+                        <strong>Ghi chú:</strong>
+                        @(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")
+                    </p>
                 </div>
             </div>
 
@@ -109,26 +127,41 @@
                 <div class="card-body">
                     <p><strong>Tên hàng:</strong> @Model.ProductName</p>
                     <p><strong>Trọng lượng:</strong> @Model.Weight kg</p>
-                    <p><strong>Giá trị khai báo:</strong> @String.Format("{0:N0}", Model.Value) VNĐ</p>
-                    <p><strong>Ghi chú thêm:</strong> @(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")</p>
+                    <p>
+                        <strong>Giá trị khai báo:</strong>
+                        @String.Format("{0:N0}", Model.Value) VNĐ
+                    </p>
+                    <p>
+                        <strong>Ghi chú thêm:</strong>
+                        @(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")
+                    </p>
                     <hr />
 
-                    <p><strong>COD (tiền hàng cần thu hộ):</strong>
+                    <p>
+                        <strong>COD (tiền hàng cần thu hộ):</strong>
                         @String.Format("{0:N0}", Model.CodAmount) đ
                     </p>
-                    <p><strong>Phí vận chuyển:</strong>
-                        <span class="text-danger fw-bold">@String.Format("{0:N0}", Model.ShipFee) đ</span>
+                    <p>
+                        <strong>Phí vận chuyển:</strong>
+                        <span class="text-danger fw-bold">
+                            @String.Format("{0:N0}", Model.ShipFee) đ
+                        </span>
                     </p>
-                    <p><strong>Người trả phí vận chuyển:</strong> @shipPayerText</p>
+                    <p>
+                        <strong>Người trả phí vận chuyển:</strong>
+                        @shipPayerText
+                    </p>
 
                     <hr />
-                    <p class="mb-1"><strong>TỔNG TIỀN TÀI XẾ CẦN THU KHÁCH:</strong></p>
+                    <p class="mb-1">
+                        <strong>TỔNG TIỀN TÀI XẾ CẦN THU KHÁCH:</strong>
+                    </p>
                     <h4 class="text-danger fw-bold">
                         @totalCollect.ToString("N0") đ
                     </h4>
                     <small class="text-muted">
                         - Nếu không COD và người gửi trả ship: tài xế không thu tiền khách.<br />
-- Nếu có COD và người nhận trả ship: thu tiền hàng + phí ship.<br />
+                        - Nếu có COD và người nhận trả ship: thu tiền hàng + phí ship.<br />
                         - Nếu có COD và người gửi trả ship: chỉ thu tiền hàng.
                     </small>
                 </div>
@@ -143,21 +176,41 @@
                             <i class="bi bi-circle-fill text-success me-2"></i>
                             Đã tạo đơn hàng lúc @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
                         </li>
+
                         @if (Model.Status == "shipping")
                         {
-                            <li><i class="bi bi-truck text-primary me-2"></i>Đang giao hàng</li>
+                            <li>
+                                <i class="bi bi-truck text-primary me-2"></i>
+                                Đang giao hàng
+                            </li>
                         }
                         else if (Model.Status == "done")
                         {
-                            <li><i class="bi bi-check-circle text-success me-2"></i>Đã giao thành công</li>
+                            <li>
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                Đã giao thành công
+                            </li>
+                        }
+                        else if (Model.Status == "failed")
+                        {
+                            <li>
+                                <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                                Giao thất bại
+                            </li>
                         }
                         else if (Model.Status == "cancelled")
                         {
-                            <li><i class="bi bi-x-circle text-danger me-2"></i>Đơn hàng đã bị hủy</li>
+                            <li>
+                                <i class="bi bi-x-circle text-danger me-2"></i>
+                                Đơn hàng đã bị hủy
+                            </li>
                         }
                         else
                         {
-                            <li><i class="bi bi-hourglass-split text-warning me-2"></i>Đang chờ xử lý</li>
+                            <li>
+                                <i class="bi bi-hourglass-split text-warning me-2"></i>
+                                Đang chờ xử lý
+                            </li>
                         }
                     </ul>
                 </div>

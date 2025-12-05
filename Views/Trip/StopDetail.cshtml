@@ -1,169 +1,305 @@
 @model WedNightFury.Models.Order
+
 @{
-    ViewData["Title"] = "Điểm giao: " + Model.Code;
-    Layout = "~/Views/Shared/_LayoutDriver.cshtml";
+    // Layout dành cho tài xế
+    Layout = "_LayoutDriver";
+
+    ViewData["Title"] = $"Điểm giao - {Model.Code}";
+
+    decimal ship  = Model.ShipFee;
+    decimal cod   = Model.CodAmount;
+    string payer  = Model.ShipPayer ?? "receiver";
+
+    // Tổng tiền tài xế THU TỪ KHÁCH
+    decimal totalCollect = 0;
+    if (cod <= 0)
+    {
+        // Không COD
+        totalCollect = (payer == "receiver") ? ship : 0;
+    }
+    else
+    {
+        // Có COD
+        totalCollect = (payer == "receiver") ? ship + cod : cod;
+    }
+
+    // Tiền tài xế phải nộp (tiền hàng)
+    decimal driverDeposit = cod > 0 ? cod : 0;
+
+    string shipPayerText = payer == "sender" ? "Người gửi" : "Người nhận";
+
+    // ===========================
+    // MAP – dùng địa chỉ khách
+    // ===========================
+    string rawAddress  = Model.ReceiverAddress ?? "";
+    string fullAddress = string.IsNullOrWhiteSpace(rawAddress)
+        ? "Việt Nam"
+        : rawAddress + ", Việt Nam";  // thêm country cho chắc
+
+    string encodedAddress = Uri.EscapeDataString(fullAddress);
 }
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
 <style>
-    .card-box {
-        background: #fff;
-        padding: 18px;
-        border-radius: 14px;
-        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-        margin-bottom: 18px;
+    .box {
+        background:#fff;
+        padding:25px;
+        border-radius:15px;
+        box-shadow:0 4px 12px rgba(0,0,0,0.08);
     }
-
-    .map-wrapper {
-        width: 100%;
-        height: 360px;
-        border-radius: 12px;
-        overflow: hidden;
-        background: #f5f5f5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #777;
-    }
-
-    .btn-driver {
-        width: 100%;
-        padding: 14px;
-        font-size: 17px;
-        font-weight: 600;
-        border-radius: 12px;
-    }
-
-    .info-row {
-        margin-bottom: 6px;
-        font-size: 16px;
-    }
-
-    .info-label {
-        font-weight: 600;
-        color: #444;
-    }
+    .label { width:160px; font-weight:600; color:#555; }
+    .val { font-weight:600; }
+    .btn-big { padding:12px 25px; border-radius:12px; font-size:17px; }
+    .timeline { border-left:3px solid #d32f2f; margin-left:15px; padding-left:20px; }
+    .tl-item { margin-bottom:15px; }
 </style>
 
-<div class="container mt-3">
+<div class="box mb-4">
+    <h3 class="fw-bold text-danger mb-3">
+        📦 ĐIỂM GIAO: @Model.Code
+    </h3>
 
-    <h3 class="fw-bold text-danger mb-3">📦 ĐIỂM GIAO: @Model.Code</h3>
-
-    <div class="card-box">
-        <div class="info-row">
-            <span class="info-label">📌 Tạo đơn:</span>
+    <!-- Timeline -->
+    <div class="timeline mb-4">
+        <div class="tl-item">
+            <strong>📌 Tạo đơn:</strong>
             @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
         </div>
 
-        <div class="info-row">
-            <span class="info-label">🚚 Đang giao lúc:</span>
-            @Model.AssignedAt?.ToString("dd/MM/yyyy HH:mm")
-        </div>
-
-        <hr />
-
-        <div class="info-row"><b>👤 Người nhận:</b> @Model.ReceiverName</div>
-        <div class="info-row"><b>📞 SĐT:</b> @Model.ReceiverPhone</div>
-        <div class="info-row"><b>📍 Địa chỉ:</b> @Model.ReceiverAddress</div>
-
-        <div class="info-row"><b>💰 Giá trị hàng:</b> @String.Format("{0:N0}", Model.Value) đ</div>
-        <div class="info-row"><b>💸 COD:</b> @String.Format("{0:N0}", Model.Cod) đ</div>
-        <div class="info-row"><b>🚛 Phí ship:</b> @String.Format("{0:N0}", Model.ShipFee) đ</div>
-
-        <hr />
-
-        <h5 class="fw-bold mt-3">🗺 Bản đồ giao hàng</h5>
-
-        <div id="map" class="map-wrapper">
-            <span id="map-status">⏳ Đang tải bản đồ...</span>
-        </div>
-    </div>
-
-    <!-- ACTION BUTTONS -->
-    <div class="row g-2 mt-3 mb-4">
-        <div class="col-6 col-md-3">
-            <a href="tel:@Model.ReceiverPhone" class="btn btn-outline-primary btn-driver">📞 Gọi khách</a>
-        </div>
-
-        <div class="col-6 col-md-3">
-            <a href="https://zalo.me/@Model.ReceiverPhone" class="btn btn-outline-info btn-driver">💬 Nhắn Zalo</a>
-        </div>
-
-        <div class="col-12 col-md-3">
-            <a target="_blank"
-               href="https://www.google.com/maps/dir/?api=1&destination=@(Model.Lat ?? 0),@(Model.Lng ?? 0)"
-               class="btn btn-dark btn-driver">📍 Điều hướng</a>
-        </div>
-
-        <div class="col-6 col-md-3">
-            <button class="btn btn-success btn-driver" data-bs-toggle="modal" data-bs-target="#podModal">✔ Đã giao (POD)</button>
-        </div>
-
-        <div class="col-6 col-md-3">
-            <button class="btn btn-danger btn-driver" data-bs-toggle="modal" data-bs-target="#failModal">✖ Giao thất bại</button>
-        </div>
-    </div>
-
-</div>
-
-<!-- MODAL POD -->
-<div class="modal fade" id="podModal">
-    <div class="modal-dialog">
-        <form asp-controller="Trip" asp-action="CompleteDelivery" method="post" enctype="multipart/form-data" class="modal-content">
-            <input type="hidden" name="id" value="@Model.Id" />
-            <div class="modal-header"><h5 class="modal-title">📸 Chụp POD</h5></div>
-            <div class="modal-body">
-                <input type="file" name="podImage" class="form-control" accept="image/*" required />
+        @if (Model.AssignedAt.HasValue)
+        {
+            <div class="tl-item">
+                <strong>🚚 Đang giao lúc:</strong>
+                @Model.AssignedAt?.ToString("dd/MM/yyyy HH:mm")
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-success">Xác nhận giao</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- MODAL FAILED -->
-<div class="modal fade" id="failModal">
-    <div class="modal-dialog">
-        <form asp-controller="Trip" asp-action="FailedDelivery" method="post" class="modal-content">
-            <input type="hidden" name="id" value="@Model.Id" />
-            <div class="modal-header"><h5 class="modal-title">❌ Báo thất bại</h5></div>
-            <div class="modal-body">
-                <textarea name="reason" class="form-control" rows="4" placeholder="Lý do giao thất bại..." required></textarea>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-danger">Xác nhận</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- MAP SCRIPT -->
-<script>
-    function initMap() {
-
-        const lat = @(Model.Lat ?? 0);
-        const lng = @(Model.Lng ?? 0);
-
-        if (lat === 0 || lng === 0) {
-            document.getElementById("map-status").innerHTML = "⚠ Không có tọa độ để hiển thị.";
-            return;
         }
 
-        const pos = { lat: lat, lng: lng };
+        @if (Model.Status == "done" && Model.DeliveredAt.HasValue)
+        {
+            <div class="tl-item">
+                <strong>✔ Giao thành công:</strong>
+                @Model.DeliveredAt?.ToString("dd/MM/yyyy HH:mm")
+            </div>
+        }
 
-        const map = new google.maps.Map(document.getElementById("map"), {
-            center: pos,
-            zoom: 17
-        });
+        @if (Model.Status == "failed" && Model.FailedAt.HasValue)
+        {
+            <div class="tl-item">
+                <strong>✖ Giao thất bại:</strong>
+                @Model.FailedAt?.ToString("dd/MM/yyyy HH:mm")
+            </div>
+        }
+    </div>
 
-        new google.maps.Marker({
-            position: pos,
-            map: map,
-            title: "Điểm giao"
-        });
+    <!-- Thông tin đơn -->
+    <div class="d-flex mb-2">
+        <div class="label">Người nhận:</div>
+        <div class="val">@Model.ReceiverName</div>
+    </div>
 
-        document.getElementById("map-status").style.display = "none";
+    <div class="d-flex mb-2">
+        <div class="label">SĐT:</div>
+        <div class="val">@Model.ReceiverPhone</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Địa chỉ:</div>
+        <div class="val">@rawAddress</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Giá trị hàng:</div>
+        <div class="val">@Model.Value.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">COD:</div>
+        <div class="val">@Model.CodAmount.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Phí ship:</div>
+        <div class="val">@Model.ShipFee.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Người trả ship:</div>
+        <div class="val">@shipPayerText</div>
+    </div>
+
+    <hr />
+
+    <div class="d-flex mb-2">
+        <div class="label">Khách phải trả:</div>
+        <div class="val text-danger">@totalCollect.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Tài xế phải nộp:</div>
+        <div class="val text-primary">@driverDeposit.ToString("N0") đ</div>
+    </div>
+
+    @* TRẠNG THÁI COD CHO TÀI XẾ *@
+    @if (cod > 0)
+    {
+        <div class="d-flex mb-2">
+            <div class="label">Trạng thái COD:</div>
+            <div class="val">
+                @if (Model.IsCodPaid)
+                {
+                    <span class="text-success fw-bold">
+                        ĐÃ THU COD
+                        @if (Model.CodPaidAt.HasValue)
+                        {
+                            @($" (lúc {Model.CodPaidAt:dd/MM/yyyy HH:mm})")
+                        }
+                    </span>
+                }
+                else
+                {
+                    <span class="text-danger fw-bold">CHƯA THU COD</span>
+                }
+            </div>
+        </div>
     }
-</script>
+</div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY&callback=initMap" async defer></script>
+<!-- Bản đồ giao hàng -->
+<div class="box mb-4" style="padding:15px 15px 5px 15px;">
+    <h5 class="fw-bold mb-2">🗺 Bản đồ giao hàng</h5>
+
+    <iframe
+        width="100%"
+        height="320"
+        style="border:0; border-radius:12px;"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        src="https://www.google.com/maps?q=@encodedAddress&output=embed">
+    </iframe>
+</div>
+
+<!-- Nếu có COD và người trả là người nhận -> yêu cầu tài xế xác nhận đã thu COD trước khi bấm POD -->
+@if (cod > 0 && payer == "receiver" && !Model.IsCodPaid)
+{
+    <div class="box mb-3">
+        <h5 class="fw-bold mb-2">💰 Xác nhận thu COD</h5>
+        <p class="mb-2">
+            Số tiền COD cần thu từ khách:
+            <span class="fw-bold text-danger">@cod.ToString("N0") đ</span>
+        </p>
+
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   id="confirmCodCheckbox" />
+            <label class="form-check-label fw-semibold" for="confirmCodCheckbox">
+                Tôi xác nhận đã thu đủ COD từ khách.
+            </label>
+        </div>
+    </div>
+}
+
+<!-- Nút thao tác -->
+<div class="d-flex flex-wrap gap-3 mb-4">
+
+    <!-- Gọi khách -->
+    <a href="tel:@Model.ReceiverPhone"
+       class="btn btn-outline-primary btn-big fw-bold">
+        ☎ Gọi khách
+    </a>
+
+    <!-- Nhắn Zalo -->
+    @if (!string.IsNullOrWhiteSpace(Model.ReceiverPhone))
+    {
+        <a href="https://zalo.me/@Model.ReceiverPhone"
+           target="_blank"
+           class="btn btn-outline-info btn-big fw-bold">
+            💬 Nhắn Zalo
+        </a>
+    }
+
+    <!-- Điều hướng: dùng địa chỉ trên đơn -->
+    <a class="btn btn-outline-dark btn-big fw-bold"
+       target="_blank"
+       href="https://www.google.com/maps/dir/?api=1&destination=@encodedAddress">
+        📍 Điều hướng
+    </a>
+
+    <!-- Đã giao (POD) – nếu cần xác nhận COD thì disable tới khi tick -->
+    @if (cod > 0 && payer == "receiver" && !Model.IsCodPaid)
+    {
+        <a asp-controller="Taixe"
+           asp-action="Delivered"
+           asp-route-id="@Model.Id"
+           id="btnDelivered"
+           class="btn btn-success btn-big fw-bold disabled"
+           aria-disabled="true">
+            ✔ Đã giao (POD)
+        </a>
+    }
+    else
+    {
+        <a asp-controller="Taixe"
+           asp-action="Delivered"
+           asp-route-id="@Model.Id"
+           class="btn btn-success btn-big fw-bold">
+            ✔ Đã giao (POD)
+        </a>
+    }
+
+    <!-- Giao thất bại – cũng xử lý bên Taixe -->
+    <a asp-controller="Taixe"
+       asp-action="Failed"
+       asp-route-id="@Model.Id"
+       class="btn btn-danger btn-big fw-bold">
+        ✖ Giao thất bại
+    </a>
+
+    <!-- NÚT GHI NHẬN ĐÃ THU COD (GỌI ConfirmCOD) -->
+    @if (cod > 0)
+    {
+        if (!Model.IsCodPaid)
+        {
+            <a asp-controller="Taixe"
+               asp-action="ConfirmCOD"
+               asp-route-id="@Model.Id"
+               class="btn btn-warning btn-big fw-bold">
+                💰 XÁC NHẬN ĐÃ THU COD
+            </a>
+        }
+        else
+        {
+            <button type="button"
+                    class="btn btn-outline-success btn-big fw-bold"
+                    disabled>
+                💰 ĐÃ THU COD
+            </button>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var checkbox = document.getElementById("confirmCodCheckbox");
+            var btnDelivered = document.getElementById("btnDelivered");
+
+            if (checkbox && btnDelivered) {
+                // Khởi tạo: chưa tick -> disable
+                btnDelivered.classList.add("disabled");
+                btnDelivered.setAttribute("aria-disabled", "true");
+
+                checkbox.addEventListener("change", function () {
+                    if (this.checked) {
+                        btnDelivered.classList.remove("disabled");
+                        btnDelivered.removeAttribute("aria-disabled");
+                    } else {
+                        btnDelivered.classList.add("disabled");
+                        btnDelivered.setAttribute("aria-disabled", "true");
+                    }
+                });
+            }
+        });
+    </script>
+}

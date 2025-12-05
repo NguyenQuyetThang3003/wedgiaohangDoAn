@@ -1,43 +1,61 @@
 @model WedNightFury.Models.Order
+
 @{
+    // Layout dành cho tài xế
+    Layout = "_LayoutDriver";
+
     ViewData["Title"] = $"Điểm giao - {Model.Code}";
 
-    decimal ship = Model.ShipFee;
-    decimal cod  = Model.CodAmount;
-    string payer = Model.ShipPayer ?? "receiver";
+    decimal ship  = Model.ShipFee;
+    decimal cod   = Model.CodAmount;
+    string payer  = Model.ShipPayer ?? "receiver";
 
-    // Tổng tiền khách phải trả cho tài xế
+    // Tổng tiền tài xế THU TỪ KHÁCH
     decimal totalCollect = 0;
-
     if (cod <= 0)
     {
-        // KHÔNG COD
+        // Không COD
         totalCollect = (payer == "receiver") ? ship : 0;
     }
     else
     {
-        // CÓ COD
+        // Có COD
         totalCollect = (payer == "receiver") ? ship + cod : cod;
     }
 
+    // Tiền tài xế phải nộp (tiền hàng)
+    decimal driverDeposit = cod > 0 ? cod : 0;
+
     string shipPayerText = payer == "sender" ? "Người gửi" : "Người nhận";
+
+    // ===========================
+    // MAP – dùng địa chỉ khách
+    // ===========================
+    string rawAddress  = Model.ReceiverAddress ?? "";
+    string fullAddress = string.IsNullOrWhiteSpace(rawAddress)
+        ? "Việt Nam"
+        : rawAddress + ", Việt Nam";  // thêm country cho chắc
+
+    string encodedAddress = Uri.EscapeDataString(fullAddress);
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    .box { background:#fff; padding:25px; border-radius:15px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-    .label { width:150px; font-weight:600; color:#555; }
+    .box {
+        background:#fff;
+        padding:25px;
+        border-radius:15px;
+        box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    }
+    .label { width:160px; font-weight:600; color:#555; }
     .val { font-weight:600; }
     .btn-big { padding:12px 25px; border-radius:12px; font-size:17px; }
     .timeline { border-left:3px solid #d32f2f; margin-left:15px; padding-left:20px; }
     .tl-item { margin-bottom:15px; }
-    .tl-item span { font-size:14px; }
 </style>
 
 <div class="box mb-4">
-
     <h3 class="fw-bold text-danger mb-3">
         📦 ĐIỂM GIAO: @Model.Code
     </h3>
@@ -45,155 +63,135 @@
     <!-- Timeline -->
     <div class="timeline mb-4">
         <div class="tl-item">
-            <strong>📌 Tạo đơn:</strong> <span>@Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+            <strong>📌 Tạo đơn:</strong>
+            @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
         </div>
 
-        @if (Model.Status == "shipping" || Model.Status == "done")
+        @if (Model.AssignedAt.HasValue)
         {
             <div class="tl-item">
-                <strong>🚚 Đang giao:</strong> <span>@Model.AssignedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+                <strong>🚚 Đang giao lúc:</strong>
+                @Model.AssignedAt?.ToString("dd/MM/yyyy HH:mm")
             </div>
         }
 
-        @if (Model.Status == "done")
+        @if (Model.Status == "done" && Model.DeliveredAt.HasValue)
         {
             <div class="tl-item">
-                <strong>✔ Giao thành công:</strong> <span>@Model.DeliveryDate?.ToString("dd/MM/yyyy HH:mm")</span>
+                <strong>✔ Giao thành công:</strong>
+                @Model.DeliveredAt?.ToString("dd/MM/yyyy HH:mm")
+            </div>
+        }
+
+        @if (Model.Status == "failed" && Model.FailedAt.HasValue)
+        {
+            <div class="tl-item">
+                <strong>✖ Giao thất bại:</strong>
+                @Model.FailedAt?.ToString("dd/MM/yyyy HH:mm")
             </div>
         }
     </div>
 
-    <!-- Info -->
-    <div class="d-flex mb-2"><div class="label">Người nhận:</div><div class="val">@Model.ReceiverName</div></div>
-    <div class="d-flex mb-2"><div class="label">SĐT:</div><div class="val">@Model.ReceiverPhone</div></div>
-    <div class="d-flex mb-2"><div class="label">Địa chỉ:</div><div class="val">@Model.ReceiverAddress</div></div>
+    <!-- Thông tin đơn -->
+    <div class="d-flex mb-2">
+        <div class="label">Người nhận:</div>
+        <div class="val">@Model.ReceiverName</div>
+    </div>
 
-    <div class="d-flex mb-2"><div class="label">Giá trị hàng:</div><div class="val">@Model.Value.ToString("N0") đ</div></div>
-    <div class="d-flex mb-2"><div class="label">COD (tiền hàng):</div><div class="val">@Model.CodAmount.ToString("N0") đ</div></div>
-    <div class="d-flex mb-2"><div class="label">Phí ship:</div><div class="val">@Model.ShipFee.ToString("N0") đ</div></div>
-    <div class="d-flex mb-2"><div class="label">Người trả ship:</div><div class="val">@shipPayerText</div></div>
+    <div class="d-flex mb-2">
+        <div class="label">SĐT:</div>
+        <div class="val">@Model.ReceiverPhone</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Địa chỉ:</div>
+        <div class="val">@rawAddress</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Giá trị hàng:</div>
+        <div class="val">@Model.Value.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">COD:</div>
+        <div class="val">@Model.CodAmount.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Phí ship:</div>
+        <div class="val">@Model.ShipFee.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Người trả ship:</div>
+        <div class="val">@shipPayerText</div>
+    </div>
 
     <hr />
 
     <div class="d-flex mb-2">
-<div class="label">TỔNG KHÁCH PHẢI TRẢ:</div>
-        <div class="val text-danger">
-            @totalCollect.ToString("N0") đ
-        </div>
+        <div class="label">Khách phải trả:</div>
+        <div class="val text-danger">@totalCollect.ToString("N0") đ</div>
     </div>
 
     <div class="d-flex mb-2">
         <div class="label">Tài xế phải nộp:</div>
-        <div class="val text-primary">
-            @totalCollect.ToString("N0") đ
-        </div>
+        <div class="val text-primary">@driverDeposit.ToString("N0") đ</div>
     </div>
+</div>
 
+<!-- Bản đồ giao hàng -->
+<div class="box mb-4" style="padding:15px 15px 5px 15px;">
+    <h5 class="fw-bold mb-2">🗺 Bản đồ giao hàng</h5>
+
+    <iframe
+        width="100%"
+        height="320"
+        style="border:0; border-radius:12px;"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        src="https://www.google.com/maps?q=@encodedAddress&output=embed">
+    </iframe>
 </div>
 
 <!-- Action Buttons -->
 <div class="d-flex flex-wrap gap-3 mb-4">
 
-    <!-- CALL -->
-    <a href="tel:@Model.ReceiverPhone" class="btn btn-outline-primary btn-big fw-bold">
+    <!-- Gọi khách -->
+    <a href="tel:@Model.ReceiverPhone"
+       class="btn btn-outline-primary btn-big fw-bold">
         ☎ Gọi khách
     </a>
 
-    <!-- ZALO -->
-    <a href="https://zalo.me/@Model.ReceiverPhone" target="_blank" class="btn btn-outline-info btn-big fw-bold">
-        💬 Nhắn Zalo
-    </a>
+    <!-- Nhắn Zalo -->
+    @if (!string.IsNullOrWhiteSpace(Model.ReceiverPhone))
+    {
+        <a href="https://zalo.me/@Model.ReceiverPhone"
+           target="_blank"
+           class="btn btn-outline-info btn-big fw-bold">
+            💬 Nhắn Zalo
+        </a>
+    }
 
-    <!-- MAP -->
+    <!-- Điều hướng: dùng địa chỉ trên đơn -->
     <a class="btn btn-outline-dark btn-big fw-bold"
-       href="https://www.google.com/maps/dir/?api=1&destination=@Model.Lat,@Model.Lng"
-       target="_blank">
+       target="_blank"
+       href="https://www.google.com/maps/dir/?api=1&destination=@encodedAddress">
         📍 Điều hướng
     </a>
 
-    <!-- POD -->
-    <a asp-action="Delivered" asp-route-id="@Model.Id"
+    <!-- Giao thành công / POD -->
+    <a asp-action="Delivered"
+       asp-route-id="@Model.Id"
        class="btn btn-success btn-big fw-bold">
-        ✔ Đã giao (Chụp POD)
+        ✔ Đã giao (POD)
     </a>
 
-    <!-- Fail -->
-    <a asp-action="Failed" asp-route-id="@Model.Id"
+    <!-- Giao thất bại -->
+    <a asp-action="Failed"
+       asp-route-id="@Model.Id"
        class="btn btn-danger btn-big fw-bold">
         ✖ Giao thất bại
     </a>
-
-    <!-- COD Confirm -->
-    @if (!Model.IsCodPaid && Model.CodAmount > 0)
-    {
-        <button class="btn btn-warning btn-big fw-bold" onclick="openCodModal()">
-            💰 Xác nhận thu COD
-        </button>
-    }
 </div>
-
-<!-- COD Modal -->
-<div id="codModal" class="modal fade">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title fw-bold">Xác nhận thu COD</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <form method="post" asp-action="ConfirmCOD" asp-route-id="@Model.Id">
-
-                <div class="modal-body">
-
-                    <label class="fw-bold">Số tiền thu COD:</label>
-                    <input name="cod" class="form-control mb-3"
-                           value="@Model.CodAmount.ToString("N0")" readonly />
-
-                    <label class="fw-bold">Chữ ký người nhận:</label>
-                    <canvas id="signPad" style="width:100%;height:200px;border:1px solid #aaa;"></canvas>
-
-                    <input type="hidden" name="signature" id="signatureInput" />
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="clearPad()">Xóa</button>
-                    <button type="submit" class="btn btn-success">Xác nhận</button>
-                </div>
-
-            </form>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-<script>
-    let modal;
-    let pad;
-
-    function openCodModal() {
-modal = new bootstrap.Modal(document.getElementById("codModal"));
-        modal.show();
-
-        let canvas = document.getElementById("signPad");
-        pad = new SignaturePad(canvas);
-    }
-
-    function clearPad() {
-        if (pad) {
-            pad.clear();
-        }
-    }
-
-    // Gắn submit cho đúng form trong modal, tránh đụng form khác (nếu có)
-    document.addEventListener("DOMContentLoaded", function () {
-        const codForm = document.querySelector("#codModal form");
-        if (codForm) {
-            codForm.addEventListener("submit", function () {
-                if (pad && !pad.isEmpty()) {
-                    document.getElementById("signatureInput").value = pad.toDataURL();
-                }
-            });
-        }
-    });
-</script>
