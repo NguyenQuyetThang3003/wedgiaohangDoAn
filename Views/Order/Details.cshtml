@@ -68,25 +68,37 @@
                         }
                     </p>
 
+                    <!-- Trạng thái COD -->
                     <p>
                         <strong>Trạng thái thanh toán COD:</strong>
                         @if (Model.CodAmount <= 0)
                         {
                             <span class="text-muted">Đơn không có COD</span>
                         }
-                        else if (Model.IsCodPaid)
-                        {
-                            <span class="text-success fw-bold">
-                                Đã đối soát COD
-                                @if (Model.CodPaidAt.HasValue)
-                                {
-                                    @($" lúc {Model.CodPaidAt:dd/MM/yyyy HH:mm}")
-                                }
-                            </span>
-                        }
                         else
                         {
-                            <span class="text-danger fw-bold">Chưa đối soát COD</span>
+                            if (Model.Status != "done")
+                            {
+                                <span class="text-danger fw-bold">
+                                    Chưa giao &ndash; chưa thu COD
+                                </span>
+                            }
+                            else if (!Model.IsCodPaid)
+                            {
+                                <span class="text-warning fw-bold">
+                                    Đã giao &ndash; tài xế chưa đối soát COD
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-success fw-bold">
+                                    Đã đối soát COD
+                                    @if (Model.CodPaidAt.HasValue)
+                                    {
+                                        @($" lúc {Model.CodPaidAt:dd/MM/yyyy HH:mm}")
+                                    }
+                                </span>
+                            }
                         }
                     </p>
 
@@ -164,6 +176,38 @@
                         - Nếu có COD và người nhận trả ship: thu tiền hàng + phí ship.<br />
                         - Nếu có COD và người gửi trả ship: chỉ thu tiền hàng.
                     </small>
+                </div>
+            </div>
+
+            <!-- Chứng từ giao hàng (POD) -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light fw-bold">
+                    Chứng từ giao hàng (POD)
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(Model.PodImagePath))
+                    {
+                        <div class="text-center">
+                            <img src="@Model.PodImagePath"
+                                 alt="Ảnh POD đơn hàng @Model.Code"
+                                 class="img-fluid rounded border mb-2"
+                                 style="max-height:350px; object-fit:contain;" />
+
+                            <div>
+                                <a href="@Model.PodImagePath"
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Xem ảnh kích thước lớn
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">
+                            Chưa có ảnh POD do tài xế tải lên.
+                        </span>
+                    }
                 </div>
             </div>
 

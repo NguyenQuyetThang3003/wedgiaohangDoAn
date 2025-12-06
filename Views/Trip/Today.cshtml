@@ -4,7 +4,7 @@
     ViewData["Title"] = "Lộ trình hôm nay";
     Layout = "~/Views/Shared/_LayoutDriver.cshtml";
 
-    int index = 1;  // Đếm thứ tự giao
+    int activeIndex = 1;  // Đếm thứ tự giao CHỈ cho đơn còn giao được
 }
 
 <style>
@@ -36,6 +36,10 @@
         justify-content: center;
         align-items: center;
         margin-right: 12px;
+    }
+
+    .order-number.inactive {
+        background: #6c757d; /* xám cho đơn đã xong / hủy */
     }
 
     .info-label {
@@ -78,18 +82,25 @@
                 : address + ", Việt Nam";
             var encoded = System.Uri.EscapeDataString(fullAddress);
 
-            bool isFirst = (index == 1); // đơn đầu tiên là gợi ý
+            // Đơn ACTIVE: còn giao được
+            bool isActiveStatus =
+                o.Status == "pending" ||
+                o.Status == "assigned" ||
+                o.Status == "shipping";
 
-            <div class="order-card shadow-sm bg-white mb-4 @(isFirst ? "suggested" : "")"
+            // Đơn đầu tiên trong nhóm ACTIVE => gợi ý
+            bool isFirstActive = isActiveStatus && (activeIndex == 1);
+
+            <div class="order-card shadow-sm bg-white mb-4 @(isFirstActive ? "suggested" : "")"
                  data-order-id="@o.Id">
 
                 <!-- Header: Thứ tự + Tên đơn -->
                 <div class="d-flex justify-content-between align-items-center">
 
                     <div class="d-flex align-items-center">
-                        <!-- Thứ tự giao -->
-                        <div class="order-number @(isFirst ? "bg-success" : "")">
-                            @index
+                        <!-- Thứ tự giao: chỉ đánh số cho đơn ACTIVE -->
+                        <div class="order-number @(isActiveStatus ? (isFirstActive ? "bg-success" : "") : "inactive")">
+                            @(isActiveStatus ? activeIndex : "-")
                         </div>
 
                         <!-- Checkbox -->
@@ -102,7 +113,7 @@
 
                         <h5 class="fw-bold mb-0">
                             Đơn: @o.Code
-                            @if (isFirst)
+                            @if (isFirstActive)
                             {
                                 <span class="badge bg-success ms-2">Gợi ý</span>
                             }
@@ -111,8 +122,11 @@
 
                     <span class="badge 
                         @(o.Status == "pending"  ? "bg-warning text-dark" :
+                          o.Status == "assigned" ? "bg-danger" :
                           o.Status == "shipping" ? "bg-primary" :
-                          o.Status == "done"     ? "bg-success" : "bg-danger")">
+                          o.Status == "done"     ? "bg-success" :
+                          o.Status == "failed"   ? "bg-danger"  :
+                          "bg-secondary")">
                         @o.Status?.ToUpper()
                     </span>
                 </div>
@@ -157,7 +171,11 @@
                 </div>
             </div>
 
-            index++; // tăng thứ tự
+            // Tăng thứ tự CHỈ cho đơn còn giao được
+            if (isActiveStatus)
+            {
+                activeIndex++;
+            }
         }
     }
 </div>

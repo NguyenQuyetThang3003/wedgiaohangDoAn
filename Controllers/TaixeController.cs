@@ -109,7 +109,7 @@ namespace WedNightFury.Controllers
             order.DriverId = driverId;
             order.AssignedAt = DateTime.Now;
             order.DeliveryDate = DateTime.Today;
-            order.Status = "assigned";   // hoặc "shipping" tùy flow của bạn
+            order.Status = "assigned";   // hoặc "shipping" tùy flow
 
             await _context.SaveChangesAsync();
 
@@ -118,7 +118,7 @@ namespace WedNightFury.Controllers
         }
 
         // ==========================================================
-        // 📌 CHI TIẾT ĐƠN
+        // 📌 CHI TIẾT ĐƠN (DIEM GIAO)
         // ==========================================================
         public async Task<IActionResult> StopDetail(int id)
         {
@@ -156,7 +156,7 @@ namespace WedNightFury.Controllers
         }
 
         // ==========================================================
-        // 📌 GIAO THÀNH CÔNG — MỞ TRANG UPLOAD POD
+        // 📌 GIAO THÀNH CÔNG — MỞ TRANG UPLOAD POD + THU COD
         // ==========================================================
         public async Task<IActionResult> Delivered(int id)
         {
@@ -170,14 +170,18 @@ namespace WedNightFury.Controllers
 
             return View(new DeliveredViewModel
             {
-                OrderId = order.Id,
-                Code = order.Code,
-                ReceiverName = order.ReceiverName,
-                ReceiverAddress = order.ReceiverAddress
+                OrderId         = order.Id,
+                Code            = order.Code,
+                ReceiverName    = order.ReceiverName,
+                ReceiverAddress = order.ReceiverAddress,
+
+                // QUAN TRỌNG: truyền COD sang view
+                CodAmount    = order.CodAmount,
+                CollectedCod = order.CodAmount
             });
         }
 
-        // 📌 LƯU POD
+        // 📌 LƯU POD + GIAO THÀNH CÔNG + TỰ ĐỘNG THU COD (NẾU CÓ)
         [HttpPost]
         public async Task<IActionResult> Delivered(DeliveredViewModel model)
         {
@@ -195,6 +199,7 @@ namespace WedNightFury.Controllers
                 return View(model);
             }
 
+            // Lưu ảnh POD
             var folder = Path.Combine(_env.WebRootPath, "uploads/pod");
             Directory.CreateDirectory(folder);
 
@@ -205,17 +210,35 @@ namespace WedNightFury.Controllers
                 await model.PodImage.CopyToAsync(stream);
 
             order.PodImagePath = "/uploads/pod/" + fileName;
-            order.DeliveredAt = DateTime.Now;
-            order.Status = "done";
+            order.DeliveredAt  = DateTime.Now;
+            order.Status       = "done";
+
+            // Lưu ghi chú (nếu Order có property Note)
+            if (!string.IsNullOrWhiteSpace(model.Note))
+            {
+                order.Note = model.Note;
+            }
+
+            // ✅ Tự động đánh dấu đã thu COD nếu:
+            // - Có COD
+            // - Người trả ship là "receiver" (tức thu từ khách nhận)
+            var payer = order.ShipPayer ?? "receiver";
+            if (order.CodAmount > 0 && payer == "receiver")
+            {
+                order.IsCodPaid = true;
+                order.CodPaidAt = DateTime.Now;
+                // Nếu DB có field CollectedCod thì có thể gán thêm ở đây
+                // order.CollectedCod = model.CollectedCod;
+            }
 
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = "Đã giao hàng. Vui lòng thu COD nếu có.";
+            TempData["Message"] = "Đã giao hàng và ghi nhận COD (nếu có).";
             return RedirectToAction("StopDetail", new { id = order.Id });
         }
 
         // ==========================================================
-        // 💰 XÁC NHẬN ĐÃ THU COD
+        // 💰 XÁC NHẬN ĐÃ THU COD (DÙNG CHỈNH SỬA THỦ CÔNG KHI CẦN)
         // ==========================================================
         public async Task<IActionResult> ConfirmCOD(int id)
         {
@@ -251,9 +274,9 @@ namespace WedNightFury.Controllers
 
             return View(new FailedDeliveryViewModel
             {
-                OrderId = order.Id,
-                Code = order.Code,
-                ReceiverName = order.ReceiverName,
+                OrderId         = order.Id,
+                Code            = order.Code,
+                ReceiverName    = order.ReceiverName,
                 ReceiverAddress = order.ReceiverAddress
             });
         }
@@ -270,8 +293,8 @@ namespace WedNightFury.Controllers
             if (order == null) return NotFound();
 
             order.FailedReason = model.FailedReason;
-            order.FailedAt = DateTime.Now;
-            order.Status = "failed";
+            order.FailedAt     = DateTime.Now;
+            order.Status       = "failed";
 
             await _context.SaveChangesAsync();
 
@@ -290,7 +313,8 @@ namespace WedNightFury.Controllers
             if (driverId == null) return Unauthorized();
 
             var query = _context.Orders
-                .Where(o => o.DriverId == driverId && (o.Status == "done" || o.Status == "failed"));
+                .Where(o => o.DriverId == driverId &&
+                            (o.Status == "done" || o.Status == "failed"));
 
             if (day.HasValue)
             {
@@ -306,10 +330,10 @@ namespace WedNightFury.Controllers
 
             query = query.OrderByDescending(o => o.DeliveredAt);
 
-            ViewBag.Day = day?.ToString("yyyy-MM-dd");
+            ViewBag.Day    = day?.ToString("yyyy-MM-dd");
             ViewBag.Status = status;
 
-            return View(await query.ToListAsync());
+            return await Task.FromResult(View(await query.ToListAsync()));
         }
     }
 }
