@@ -2,8 +2,8 @@
 @using System.Text.Json
 
 @{
-    // Layout sẽ do controller set vào ViewBag.Layout theo role
-    Layout = ViewBag.Layout ?? "~/Views/Shared/_LayoutCustomer.cshtml";
+    // Layout do controller set theo role, mặc định dùng layout customer
+    Layout = ViewBag.Layout ?? "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Cài đặt tài khoản";
 }
 
@@ -92,107 +92,112 @@
     .card { border-radius: 12px; }
 </style>
 
-<script>
-    // Giá trị đang lưu trong profile (server trả về)
-    const currentCity     = @Html.Raw(JsonSerializer.Serialize(Model?.City ?? ""));
-    const currentDistrict = @Html.Raw(JsonSerializer.Serialize(Model?.District ?? ""));
-    const currentWard     = @Html.Raw(JsonSerializer.Serialize(Model?.Ward ?? ""));
+@section Scripts {
+    <script>
+        // Giá trị đang lưu trong profile (server trả về)
+        const currentCity     = @Html.Raw(JsonSerializer.Serialize(Model?.City ?? ""));
+        const currentDistrict = @Html.Raw(JsonSerializer.Serialize(Model?.District ?? ""));
+        const currentWard     = @Html.Raw(JsonSerializer.Serialize(Model?.Ward ?? ""));
 
-    let provinces = [];
+        let provinces = [];
 
-    // Lấy danh sách tỉnh / huyện / xã từ GitHub
-    fetch("https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json")
-        .then(res => res.json())
-        .then(data => {
-            provinces = data;
-            initLocation();
-        });
+        // Lấy danh sách tỉnh / huyện / xã từ GitHub
+        fetch("https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json")
+            .then(res => {
+                if (!res.ok) throw new Error("Network response was not ok");
+                return res.json();
+            })
+            .then(data => {
+                provinces = data;
+                initLocation();
+            })
+            .catch(err => {
+                console.error("Không tải được dữ liệu địa giới hành chính:", err);
+            });
 
-    function initLocation() {
-        const citySelect     = document.getElementById("citySelect");
-        const districtSelect = document.getElementById("districtSelect");
-        const wardSelect     = document.getElementById("wardSelect");
+        function initLocation() {
+            const citySelect     = document.getElementById("citySelect");
+            const districtSelect = document.getElementById("districtSelect");
+            const wardSelect     = document.getElementById("wardSelect");
 
-        if (!citySelect) return;
+            if (!citySelect) return;
 
-        citySelect.innerHTML = '<option value="">-- Chọn tỉnh / thành phố --</option>';
+            citySelect.innerHTML = '<option value="">-- Chọn tỉnh / thành phố --</option>';
 
-        provinces.forEach(p => {
-            const opt = document.createElement("option");
-            opt.value = p.Name;      // lưu tên tỉnh
-            opt.text  = p.Name;
-            opt.dataset.id = p.Id;   // lưu thêm Id để tra huyện
-            if (p.Name === currentCity) opt.selected = true;
-            citySelect.appendChild(opt);
-        });
+            provinces.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.Name;
+                opt.text  = p.Name;
+                opt.dataset.id = p.Id;
+                if (p.Name === currentCity) opt.selected = true;
+                citySelect.appendChild(opt);
+            });
 
-        citySelect.addEventListener("change", () => {
-            loadDistricts();
-        });
+            citySelect.addEventListener("change", loadDistricts);
 
-        if (currentCity) {
-            loadDistricts();
+            if (currentCity) {
+                loadDistricts();
+            }
+
+            districtSelect.addEventListener("change", loadWards);
         }
 
-        districtSelect.addEventListener("change", () => {
-            loadWards();
-        });
-    }
+        function loadDistricts() {
+            const citySelect     = document.getElementById("citySelect");
+            const districtSelect = document.getElementById("districtSelect");
+            const wardSelect     = document.getElementById("wardSelect");
 
-    function loadDistricts() {
-        const citySelect     = document.getElementById("citySelect");
-        const districtSelect = document.getElementById("districtSelect");
-        const wardSelect     = document.getElementById("wardSelect");
+            districtSelect.innerHTML = '<option value="">-- Chọn quận / huyện --</option>';
+            wardSelect.innerHTML     = '<option value="">-- Chọn phường / xã --</option>';
 
-        districtSelect.innerHTML = '<option value="">-- Chọn quận / huyện --</option>';
-        wardSelect.innerHTML     = '<option value="">-- Chọn phường / xã --</option>';
+            const cityOpt = citySelect.selectedOptions[0];
+            if (!cityOpt) return;
 
-        const cityOpt = citySelect.selectedOptions[0];
-        if (!cityOpt) return;
+            const provinceId = cityOpt.dataset.id;
+            const province = provinces.find(p => p.Id == provinceId);
+            if (!province) return;
 
-        const provinceId = cityOpt.dataset.id;
-        const province = provinces.find(p => p.Id == provinceId);
-        if (!province) return;
+            province.Districts.forEach(d => {
+                const opt = document.createElement("option");
+                opt.value = d.Name;
+                opt.text  = d.Name;
+                opt.dataset.id = d.Id;
+                if (d.Name === currentDistrict) opt.selected = true;
+                districtSelect.appendChild(opt);
+            });
 
-        province.Districts.forEach(d => {
-            const opt = document.createElement("option");
-            opt.value = d.Name;
-            opt.text  = d.Name;
-            opt.dataset.id = d.Id;
-            if (d.Name === currentDistrict) opt.selected = true;
-            districtSelect.appendChild(opt);
-        });
-
-        if (currentDistrict) {
-            loadWards();
+            if (currentDistrict) {
+                loadWards();
+            }
         }
-    }
 
-    function loadWards() {
-        const citySelect     = document.getElementById("citySelect");
-        const districtSelect = document.getElementById("districtSelect");
-        const wardSelect     = document.getElementById("wardSelect");
+        function loadWards() {
+            const citySelect     = document.getElementById("citySelect");
+            const districtSelect = document.getElementById("districtSelect");
+            const wardSelect     = document.getElementById("wardSelect");
 
-        wardSelect.innerHTML = '<option value="">-- Chọn phường / xã --</option>';
+            wardSelect.innerHTML = '<option value="">-- Chọn phường / xã --</option>';
 
-        const cityOpt = citySelect.selectedOptions[0];
-        const distOpt = districtSelect.selectedOptions[0];
-        if (!cityOpt || !distOpt) return;
+            const cityOpt = citySelect.selectedOptions[0];
+            const distOpt = districtSelect.selectedOptions[0];
+            if (!cityOpt || !distOpt) return;
 
-        const provinceId = cityOpt.dataset.id;
-        const districtId = distOpt.dataset.id;
+            const provinceId = cityOpt.dataset.id;
+            const districtId = distOpt.dataset.id;
 
-        const province = provinces.find(p => p.Id == provinceId);
-        if (!province) return;
-        const district = province.Districts.find(d => d.Id == districtId);
-        if (!district) return;
+            const province = provinces.find(p => p.Id == provinceId);
+            if (!province) return;
+            const district = province.Districts.find(d => d.Id == districtId);
+            if (!district) return;
 
-        district.Wards.forEach(w => {
-            const opt = document.createElement("option");
-            opt.value = w.Name;
-            opt.text  = w.Name;
-            if (w.Name === currentWard) opt.selected = true;
-            wardSelect.appendChild(opt);
-        });
-    }
-</script>
+            district.Wards.forEach(w => {
+                const opt = document.createElement("option");
+                opt.value = w.Name;
+                opt.text  = w.Name;
+                if (w.Name === currentWard) opt.selected = true;
+                wardSelect.appendChild(opt);
+            });
+        }
+    </script>
+}
+
