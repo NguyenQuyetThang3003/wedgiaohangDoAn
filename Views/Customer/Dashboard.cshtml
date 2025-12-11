@@ -1,5 +1,7 @@
 @using System
 @using System.Linq
+@using System.Text.Json
+
 @{
     ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -11,6 +13,9 @@
     var pieData = ViewBag.PieData as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var lastUpdate = ViewBag.LastUpdate ?? DateTime.Now.ToString("HH:mm");
     var customer = ViewBag.CustomerName ?? "Khách hàng";
+
+    DateTime fromDate = ViewBag.FromDate ?? DateTime.Today;
+    DateTime toDate = ViewBag.ToDate ?? DateTime.Today;
 }
 
 <div class="container-fluid px-4">
@@ -52,10 +57,12 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-chart-bar"></i> THỐNG KÊ ĐƠN HÀNG</h5>
                     <form method="get" class="d-flex">
-                        <input type="date" name="fromDate" class="form-control form-control-sm me-2"
-                               value="@Context.Request.Query["fromDate"]" />
-                        <input type="date" name="toDate" class="form-control form-control-sm me-2"
-                               value="@Context.Request.Query["toDate"]" />
+                        <input type="date" name="fromDate"
+                               class="form-control form-control-sm me-2"
+                               value="@fromDate.ToString("yyyy-MM-dd")" />
+                        <input type="date" name="toDate"
+                               class="form-control form-control-sm me-2"
+                               value="@toDate.ToString("yyyy-MM-dd")" />
                         <button class="btn btn-sm btn-outline-primary">Lọc</button>
                     </form>
                 </div>
@@ -96,33 +103,35 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // === BAR CHART ===
-        const barData = @Html.Raw(Json.Serialize(barData.ToList()));
+        const barData = @Html.Raw(JsonSerializer.Serialize(barData.ToList()));
+        console.log("barData", barData);
+
         const barCtx = document.getElementById('barChart').getContext('2d');
 
         if (barData.length > 0) {
             new Chart(barCtx, {
                 type: 'bar',
                 data: {
-                    labels: barData.map(b => b.Month),
+                    labels: barData.map(b => b.month),      // "MM/yyyy"
                     datasets: [
                         {
                             label: 'Giao thành công',
-                            data: barData.map(b => b.Success),
+                            data: barData.map(b => b.success),
                             backgroundColor: '#00a65a'
                         },
                         {
                             label: 'Đã hoàn',
-                            data: barData.map(b => b.Fail),
+                            data: barData.map(b => b.fail),
                             backgroundColor: '#f56954'
                         },
                         {
                             label: 'Đang giao',
-                            data: barData.map(b => b.Shipping),
+                            data: barData.map(b => b.shipping),
                             backgroundColor: '#00c0ef'
                         },
                         {
                             label: 'Chờ xử lý',
-                            data: barData.map(b => b.Pending),
+                            data: barData.map(b => b.pending),
                             backgroundColor: '#f39c12'
                         }
                     ]
@@ -136,7 +145,9 @@
         }
 
         // === PIE CHART ===
-        const pieData = @Html.Raw(Json.Serialize(pieData.ToList()));
+        const pieData = @Html.Raw(JsonSerializer.Serialize(pieData.ToList()));
+        console.log("pieData", pieData);
+
         if (pieData.length > 0) {
             const colors = [
                 '#00c0ef','#f39c12','#00a65a','#f56954','#3c8dbc',
@@ -147,9 +158,9 @@
             new Chart(pieCtx, {
                 type: 'pie',
                 data: {
-                    labels: pieData.map(p => p.Province),
+                    labels: pieData.map(p => p.province),
                     datasets: [{
-                        data: pieData.map(p => p.Count),
+                        data: pieData.map(p => p.count),
                         backgroundColor: colors
                     }]
                 },
@@ -166,7 +177,7 @@
                 li.innerHTML = `
                     <span style="display:inline-block;width:12px;height:12px;
                                  background:${colors[i % colors.length]};margin-right:6px"></span>
-                    ${item.Province} (${item.Count})
+                    ${item.province} (${item.count})
                 `;
                 legendContainer.appendChild(li);
             });
