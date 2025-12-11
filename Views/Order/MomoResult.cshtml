@@ -1,0 +1,146 @@
+@model WedNightFury.Models.MoMo.MomoResultModel
+
+@{
+    ViewData["Title"] = "Kết quả thanh toán MoMo";
+    var result = Model;
+    bool isSuccess = result != null && result.Success;
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<style>
+    .momo-wrapper {
+        max-width: 720px;
+        margin: 40px auto;
+    }
+
+    .momo-header {
+        background: linear-gradient(135deg, #d81b60, #8e24aa);
+        color: #fff;
+        border-top-left-radius: .75rem;
+        border-top-right-radius: .75rem;
+        padding: 20px 30px;
+        text-align: center;
+    }
+
+    .momo-body {
+        border: 1px solid #eee;
+        border-top: none;
+        border-bottom-left-radius: .75rem;
+        border-bottom-right-radius: .75rem;
+        padding: 30px;
+        background-color: #fff;
+    }
+
+    .momo-status-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin-bottom: 15px;
+    }
+
+    .momo-status-icon.success {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .momo-status-icon.fail {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+
+    .momo-info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed #eee;
+        font-size: 15px;
+    }
+
+    .momo-info-row span:first-child {
+        color: #757575;
+    }
+
+    .momo-info-row span:last-child {
+        font-weight: 500;
+    }
+
+    .momo-actions {
+        margin-top: 25px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+</style>
+
+<div class="container momo-wrapper">
+    <div class="momo-header">
+        <div class="momo-status-icon @(isSuccess ? "success" : "fail")">
+            @if (isSuccess)
+            {
+                <span class="bi bi-check-lg"></span>
+            }
+            else
+            {
+                <span class="bi bi-x-lg"></span>
+            }
+        </div>
+
+        <h3 class="mb-1">
+            @(isSuccess ? "Thanh toán MoMo thành công" : "Thanh toán MoMo thất bại")
+        </h3>
+
+        <p class="mb-0">
+            @ViewBag.Message
+        </p>
+    </div>
+
+    <div class="momo-body">
+        @if (result != null)
+        {
+            <div class="mb-3">
+                <div class="momo-info-row">
+                    <span>Mã giao dịch MoMo</span>
+                    <span>@(string.IsNullOrEmpty(result.TransId) ? "-" : result.TransId)</span>
+                </div>
+                <div class="momo-info-row">
+                    <span>Số tiền thanh toán</span>
+                    <span>@string.Format("{0:N0} đ", result.Amount)</span>
+                </div>
+                <div class="momo-info-row">
+                    <span>Result code</span>
+                    <span>@result.ResultCode</span>
+                </div>
+                <div class="momo-info-row">
+                    <span>Thông điệp</span>
+                    <span>@(string.IsNullOrEmpty(result.Message) ? "-" : result.Message)</span>
+                </div>
+            </div>
+        }
+
+        <div class="momo-actions">
+            @if (isSuccess)
+            {
+                <form asp-action="SaveOrderAfterMomo" asp-controller="Order" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success px-4">
+                        Xác nhận &amp; Tạo đơn
+                    </button>
+                </form>
+            }
+
+            <a href="@Url.Action("Create", "Order")" class="btn btn-outline-secondary px-4">
+                Tạo đơn mới
+            </a>
+
+            <a href="@Url.Action("Manage", "Order")" class="btn btn-outline-primary px-4">
+                Xem danh sách vận đơn
+            </a>
+        </div>
+    </div>
+</div>

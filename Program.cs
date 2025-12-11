@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using WedNightFury.Models;
 using QuestPDF.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using WedNightFury.Services.VnPay;
+using WedNightFury.Services.MoMo; // <- NHỚ CÓ DÒNG NÀY
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +39,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
+// ---------- ĐĂNG KÝ DỊCH VỤ THANH TOÁN ----------
+builder.Services.AddScoped<IVnPayService, VnPayService>();
+builder.Services.AddScoped<IMomoService, MomoService>();   // <- DÒNG QUAN TRỌNG
+
 var app = builder.Build();
 
 // Error handling
@@ -49,7 +55,6 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// ⭐ FIX QUAN TRỌNG: ĐÚNG THỨ TỰ MIDDLEWARE
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();

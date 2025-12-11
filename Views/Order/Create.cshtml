@@ -11,6 +11,20 @@
         <i class="bi bi-truck"></i> TẠO ĐƠN HÀNG NIGHTFURY
     </h2>
 
+    @* THÔNG BÁO TỪ VNPAY / MOMO / TẠO ĐƠN *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success text-center">
+            @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger text-center">
+            @TempData["Error"]
+        </div>
+    }
+
     <form asp-action="Create" method="post" id="orderForm">
         @Html.AntiForgeryToken()
 
@@ -74,7 +88,8 @@
                     <label>Tên hàng</label>
                     <input asp-for="ProductName" class="form-control" />
                 </div>
-<div class="col-md-4">
+
+                <div class="col-md-4">
                     <label>Loại hàng</label>
                     <select name="GoodsType" class="form-select">
                         <option value="">-- Chọn loại hàng --</option>
@@ -131,7 +146,7 @@
                     <label>Phương thức gửi hàng</label>
                     <div class="btn-group d-flex" role="group" aria-label="Phương thức gửi">
                         <input type="radio" name="PickupMethod" id="pickup-staff" value="pickup"
-class="btn-check" checked onchange="toggleHub();calculateShipping();" />
+                               class="btn-check" checked onchange="toggleHub();calculateShipping();" />
                         <label class="btn btn-outline-primary w-50" for="pickup-staff">Nhân viên lấy hàng</label>
 
                         <input type="radio" name="PickupMethod" id="pickup-hub" value="hub"
@@ -180,7 +195,7 @@ class="btn-check" checked onchange="toggleHub();calculateShipping();" />
                 <div class="col-md-3 mt-3">
                     <label>COD (tiền thu hộ)</label>
                     <input id="codInput" type="text" class="form-control"
-oninput="formatCurrency(this);
+                           oninput="formatCurrency(this);
                                     document.getElementById('CodHidden').value=this.value.replace(/\\D/g,'');
                                     updateSenderSummary();" />
                     <div class="form-check mt-2">
@@ -218,6 +233,24 @@ oninput="formatCurrency(this);
                     <small class="text-muted">
                         = Tiền hàng COD – phí ship shop chịu.
                     </small>
+
+                    <!-- Nút thanh toán phí ship qua VNPay -->
+                    <button type="submit"
+                            class="btn btn-outline-danger w-100 mt-2"
+                            id="btnVnPay"
+                            formaction="@Url.Action("CreateAndPayVnPay", "Order")"
+                            style="display:none;">
+                        Thanh toán phí ship qua VNPay
+                    </button>
+
+                    <!-- Nút thanh toán phí ship qua MoMo -->
+                    <button type="submit"
+                            class="btn btn-outline-success w-100 mt-2"
+                            id="btnMomo"
+                            formaction="@Url.Action("CreateAndPayMomo", "Order")"
+                            style="display:none;">
+                        Thanh toán phí ship qua MoMo
+                    </button>
                 </div>
 
             </div>
@@ -240,7 +273,7 @@ oninput="formatCurrency(this);
 
 <script>
     // --- City người gửi (từ Profile) để check nội/ngoại thành ---
-const senderCity = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.SenderCity ?? ""));
+    const senderCity = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.SenderCity ?? ""));
 
     // --------- FORMAT TIỀN ---------
     function formatCurrency(input) {
@@ -321,7 +354,7 @@ const senderCity = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.S
     function toggleHub() {
         const hubWrap = document.getElementById("hub-wrapper");
         const methodInput =
-        document.querySelector('input[name="PickupMethod"]:checked');
+            document.querySelector('input[name="PickupMethod"]:checked');
         if (!hubWrap) return;
 
         if (methodInput && methodInput.value === "hub") {
@@ -378,13 +411,6 @@ const senderCity = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.S
     }
 
     // --------- TỔNG TIỀN SHOP NHẬN ĐƯỢC & PHÍ SHIP SHOP CHỊU ---------
-    // Quy ước:
-    // - SenderShipFee:
-    //      + Nếu ShipPayer = sender  => = ShipFee
-    //      + Nếu ShipPayer = receiver => = 0
-    // - SenderNet (tiền shop nhận được):
-    //      + Nếu COD > 0 => = COD - SenderShipFee (không âm)
-    //      + Nếu không COD => = 0 (shop không nhận COD, chỉ gửi hàng giúp)
     function updateSenderSummary() {
         const shipRaw = document.getElementById("ShipFeeHidden").value || "0";
         const codRaw  = document.getElementById("CodHidden").value    || "0";
@@ -405,7 +431,7 @@ const senderCity = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.S
 
         let net = 0;
         if (cod > 0) {
-net = cod - senderShip;
+            net = cod - senderShip;
             if (net < 0) net = 0;
         } else {
             net = 0;
@@ -413,6 +439,8 @@ net = cod - senderShip;
 
         const senderShipInput = document.getElementById("sender-ship-fee");
         const senderNetInput  = document.getElementById("sender-net");
+        const btnVnPay        = document.getElementById("btnVnPay");
+        const btnMomo         = document.getElementById("btnMomo");
 
         if (senderShipInput) {
             senderShipInput.value = senderShip > 0
@@ -424,6 +452,16 @@ net = cod - senderShip;
                 ? new Intl.NumberFormat("vi-VN").format(net) + " đ"
                 : "0 đ";
         }
+
+        // Hiển thị nút VNPay & MoMo: chỉ khi người gửi trả ship và ship > 0
+        const showOnlinePay = (payer === "sender" && ship > 0);
+
+        if (btnVnPay) {
+            btnVnPay.style.display = showOnlinePay ? "block" : "none";
+        }
+        if (btnMomo) {
+            btnMomo.style.display = showOnlinePay ? "block" : "none";
+        }
     }
 
     // --------- VALIDATE NỘI / NGOẠI THÀNH ---------
@@ -431,7 +469,7 @@ net = cod - senderShip;
         const s = (senderCityName       || "").trim().toLowerCase();
         const r = (receiverProvinceName || "").trim().toLowerCase();
 
-        if (!s || !r) return { ok: true, message: "" }; // thiếu dữ liệu
+        if (!s || !r) return { ok: true, message: "" };
 
         if (area === "inner" && s !== r) {
             return {

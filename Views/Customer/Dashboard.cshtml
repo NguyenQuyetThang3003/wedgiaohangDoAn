@@ -6,16 +6,16 @@
     ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    var success = ViewBag.SuccessCount ?? 0;
-    var failed = ViewBag.FailCount ?? 0;
-    var total = ViewBag.TotalOrders ?? 0;
-    var barData = ViewBag.BarData as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
-    var pieData = ViewBag.PieData as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
-    var lastUpdate = ViewBag.LastUpdate ?? DateTime.Now.ToString("HH:mm");
-    var customer = ViewBag.CustomerName ?? "Khách hàng";
+    var success   = ViewBag.SuccessCount ?? 0;
+    var failed    = ViewBag.FailCount ?? 0;
+    var total     = ViewBag.TotalOrders ?? 0;
+    var barData   = ViewBag.BarData as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var pieData   = ViewBag.PieData as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var lastUpdate= ViewBag.LastUpdate ?? DateTime.Now.ToString("HH:mm");
+    var customer  = ViewBag.CustomerName ?? "Khách hàng";
 
     DateTime fromDate = ViewBag.FromDate ?? DateTime.Today;
-    DateTime toDate = ViewBag.ToDate ?? DateTime.Today;
+    DateTime toDate   = ViewBag.ToDate ?? DateTime.Today;
 }
 
 <div class="container-fluid px-4">
@@ -56,16 +56,28 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-chart-bar"></i> THỐNG KÊ ĐƠN HÀNG</h5>
-                    <form method="get" class="d-flex">
-                        <input type="date" name="fromDate"
-                               class="form-control form-control-sm me-2"
-                               value="@fromDate.ToString("yyyy-MM-dd")" />
-                        <input type="date" name="toDate"
-                               class="form-control form-control-sm me-2"
-                               value="@toDate.ToString("yyyy-MM-dd")" />
-                        <button class="btn btn-sm btn-outline-primary">Lọc</button>
-                    </form>
+
+                    <div class="d-flex">
+                        <form method="get" asp-action="Dashboard" class="d-flex me-2">
+                            <input type="date" name="fromDate"
+                                   class="form-control form-control-sm me-2"
+                                   value="@fromDate.ToString("yyyy-MM-dd")" />
+                            <input type="date" name="toDate"
+                                   class="form-control form-control-sm me-2"
+                                   value="@toDate.ToString("yyyy-MM-dd")" />
+                            <button class="btn btn-sm btn-outline-primary">Lọc</button>
+                        </form>
+
+                        <form method="get" asp-action="ExportExcel">
+                            <input type="hidden" name="fromDate" value="@fromDate.ToString("yyyy-MM-dd")" />
+                            <input type="hidden" name="toDate"   value="@toDate.ToString("yyyy-MM-dd")" />
+                            <button class="btn btn-sm btn-success">
+                                <i class="fas fa-file-excel"></i> Xuất Excel
+                            </button>
+                        </form>
+                    </div>
                 </div>
+
                 <div class="card-body">
                     <p>
                         Giao thành công:
@@ -104,15 +116,13 @@
     <script>
         // === BAR CHART ===
         const barData = @Html.Raw(JsonSerializer.Serialize(barData.ToList()));
-        console.log("barData", barData);
-
         const barCtx = document.getElementById('barChart').getContext('2d');
 
         if (barData.length > 0) {
             new Chart(barCtx, {
                 type: 'bar',
                 data: {
-                    labels: barData.map(b => b.month),      // "MM/yyyy"
+                    labels: barData.map(b => b.month),
                     datasets: [
                         {
                             label: 'Giao thành công',
@@ -146,7 +156,6 @@
 
         // === PIE CHART ===
         const pieData = @Html.Raw(JsonSerializer.Serialize(pieData.ToList()));
-        console.log("pieData", pieData);
 
         if (pieData.length > 0) {
             const colors = [
@@ -170,7 +179,6 @@
                 }
             });
 
-            // Custom legend
             const legendContainer = document.getElementById('pieLegend');
             pieData.forEach((item, i) => {
                 const li = document.createElement('li');
